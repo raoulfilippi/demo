@@ -1,78 +1,237 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calendario Prenotazioni Casa Mare</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Prenotazioni Casa Mare</title>
 
-  <!-- FullCalendar CSS compatibile -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/5.11.3/main.min.css" rel="stylesheet">
+    <!-- Tailwind CSS per lo stile -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FullCalendar CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome per icone -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #calendar { max-width: 900px; margin: 0 auto; }
-    h1 { text-align: center; color: black; }
-  </style>
+    <style>
+        .fc-event {
+            cursor: pointer;
+        }
+        /* Personalizzazione colori FullCalendar */
+        .fc-button-primary {
+            background-color: #3b82f6 !important;
+            border-color: #3b82f6 !important;
+        }
+        .fc-button-primary:hover {
+            background-color: #2563eb !important;
+            border-color: #2563eb !important;
+        }
+    </style>
 </head>
-<body>
+<body class="bg-gray-100 font-sans text-gray-800">
 
-<h1>Calendario Prenotazioni Casa Mare</h1>
-<div id="calendar"></div>
+    <div class="max-w-6xl mx-auto p-4">
+        <!-- Header -->
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl font-bold text-blue-800 mb-2">
+                <i class="fas fa-umbrella-beach mr-2"></i>Prenotazioni Casa Mare
+            </h1>
+            <p class="text-gray-600" id="status-msg">Caricamento calendario...</p>
+        </header>
 
-<!-- Firebase compatibile -->
-<script src="https://www.gstatic.com/firebasejs/8.16.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.16.0/firebase-firestore.js"></script>
+        <!-- Container Calendario -->
+        <div class="bg-white rounded-lg shadow-xl p-4 md:p-6">
+            <div id="calendar"></div>
+        </div>
 
-<!-- FullCalendar JS compatibile -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/5.11.3/main.min.js"></script>
+        <!-- Pannello Aggiunta Veloce (per test) -->
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Aggiungi Nuova Prenotazione</h2>
+            <form id="booking-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome Ospite</label>
+                    <input type="text" id="nome" required class="w-full border rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Mario Rossi">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Data Inizio</label>
+                    <input type="date" id="data_inizio" required class="w-full border rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Data Fine</label>
+                    <input type="date" id="data_fine" required class="w-full border rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200">
+                        <i class="fas fa-plus mr-1"></i> Prenota
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-<script>
-  // 🔹 Inserisci qui la tua configurazione Firebase
-  var firebaseConfig = {
-    apiKey: "API_KEY",
-    authDomain: "PROJECT_ID.firebaseapp.com",
-    projectId: "PROJECT_ID",
-    storageBucket: "PROJECT_ID.appspot.com",
-    messagingSenderId: "SENDER_ID",
-    appId: "APP_ID"
-  };
+    <!-- FullCalendar JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/it.js"></script>
 
-  // Inizializza Firebase
-  firebase.initializeApp(firebaseConfig);
-  var db = firebase.firestore();
+    <!-- Script Modulare Firebase -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, onSnapshot, query } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-  // Funzione per caricare prenotazioni e creare eventi
-  db.collection("prenotazioni casa mare").get().then(snapshot => {
-    var events = [];
-    snapshot.forEach(doc => {
-      var data = doc.data();
-      // FullCalendar esclude il giorno finale, quindi aggiungiamo 1 giorno
-      var endDate = new Date(data.data_fine);
-      endDate.setDate(endDate.getDate() + 1);
+        // Configurazione Firebase recuperata dall'ambiente
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Nome della collezione (usiamo il percorso corretto per questo ambiente)
+        const COLLECTION_NAME = 'prenotazioni_casa_mare';
+        
+        let calendar; // Riferimento globale al calendario
 
-      events.push({
-        title: data.nome,
-        start: data.data_inizio,
-        end: endDate.toISOString().split('T')[0],
-        color: 'red'
-      });
-    });
+        // 1. Inizializzazione Calendario
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                locale: 'it', // Imposta lingua italiana
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,listMonth'
+                },
+                events: [], // Inizialmente vuoto, riempito da Firestore
+                eventClick: function(info) {
+                    alert('Prenotazione di: ' + info.event.title + '\nDal: ' + info.event.start.toLocaleDateString() + '\nAl: ' + info.event.end?.toLocaleDateString());
+                }
+            });
+            
+            calendar.render();
+            
+            // Imposta date minime per i picker
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('data_inizio').setAttribute('min', today);
+            document.getElementById('data_fine').setAttribute('min', today);
+        });
 
-    var calendarEl = document.getElementById('calendar');
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: 'dayGridMonth',
-      events: events,
-      headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: ''
-      }
-    });
-    calendar.render();
-  }).catch(err => {
-    console.error("Errore caricamento prenotazioni:", err);
-  });
-</script>
+        // 2. Gestione Autenticazione e Dati
+        const initApp = async () => {
+            try {
+                // Autenticazione (Obbligatoria prima di leggere Firestore)
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
 
+                // Listener stato Auth
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        document.getElementById('status-msg').innerText = "Connesso al database. Sincronizzazione in corso...";
+                        loadBookings(user);
+                    } else {
+                        document.getElementById('status-msg').innerText = "Errore di autenticazione.";
+                    }
+                });
+
+            } catch (error) {
+                console.error("Errore Auth:", error);
+                document.getElementById('status-msg').innerText = "Errore di connessione al sistema.";
+            }
+        };
+
+        // 3. Caricamento Dati in Tempo Reale
+        function loadBookings(user) {
+            // Percorso obbligatorio: artifacts/{appId}/public/data/{collectionName}
+            const q = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
+
+            // onSnapshot ascolta i cambiamenti in tempo reale
+            onSnapshot(q, (snapshot) => {
+                const events = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if(data.data_inizio && data.data_fine) {
+                        
+                        // FullCalendar è esclusivo sulla data di fine, quindi aggiungiamo 1 giorno visivo
+                        // MA per semplicità di rendering, passiamo la stringa ISO.
+                        // Se vuoi che finisca ESATTAMENTE quel giorno visivamente, 
+                        // spesso bisogna aggiungere un giorno alla data di fine se è "allDay".
+                        
+                        let endDate = new Date(data.data_fine);
+                        endDate.setDate(endDate.getDate() + 1);
+
+                        events.push({
+                            id: doc.id,
+                            title: data.nome || 'Prenotato',
+                            start: data.data_inizio,
+                            end: endDate.toISOString().split('T')[0], // Formato YYYY-MM-DD
+                            color: '#ef4444', // Rosso Tailwind
+                            allDay: true
+                        });
+                    }
+                });
+
+                // Aggiorna il calendario rimuovendo i vecchi eventi e mettendo i nuovi
+                calendar.removeAllEvents();
+                calendar.addEventSource(events);
+                document.getElementById('status-msg').innerText = "Calendario aggiornato.";
+                
+            }, (error) => {
+                console.error("Errore lettura Firestore:", error);
+                document.getElementById('status-msg').innerText = "Errore nel caricamento dati.";
+            });
+        }
+
+        // 4. Gestione Form Aggiunta Prenotazione
+        document.getElementById('booking-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const nome = document.getElementById('nome').value;
+            const start = document.getElementById('data_inizio').value;
+            const end = document.getElementById('data_fine').value;
+
+            if (start > end) {
+                alert("La data di fine non può essere precedente alla data di inizio!");
+                return;
+            }
+
+            const submitBtn = e.target.querySelector('button');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Salvataggio...";
+
+            try {
+                // Percorso di scrittura (Public Data)
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
+                
+                await addDoc(colRef, {
+                    nome: nome,
+                    data_inizio: start,
+                    data_fine: end,
+                    created_at: new Date().toISOString()
+                });
+
+                // Reset form
+                e.target.reset();
+                alert("Prenotazione aggiunta con successo!");
+
+            } catch (error) {
+                console.error("Errore salvataggio:", error);
+                alert("Errore nel salvare la prenotazione.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+
+        // Avvio applicazione
+        initApp();
+
+    </script>
 </body>
 </html>
