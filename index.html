@@ -43,13 +43,13 @@
   .auth-modal .modal-content { background: #fff; padding: 1.5rem; border-radius: 12px; width: 92%; max-width: 420px; position: relative; max-height: 90vh; overflow: auto; }
   .auth-modal .modal-close { position: absolute; right: 12px; top: 8px; font-size: 20px; cursor:pointer; background: transparent; border: none; }
 
-  /* Mobile menu + overlay */
-  #mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 44; }
+  /* Mobile menu + overlay - FIXED z-index */
+  #mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 55; }
   #mobile-overlay.show { display: block; }
-  #mobile-menu { display: none; position: fixed; top: 80px; left: 0; width: 100%; background: #fff; border-top: 1px solid #e5e7eb; box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 45; max-height: calc(100vh - 80px); overflow:auto; }
+  #mobile-menu { display: none; position: fixed; top: 80px; left: 0; width: 100%; background: #fff; border-top: 1px solid #e5e7eb; box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 56; max-height: calc(100vh - 80px); overflow:auto; }
   #mobile-menu.show { display: block; }
 
-  /* Ensure hamburger clickable above header children */
+  /* Ensure hamburger clickable */
   #menu-btn { position: relative; z-index: 60; }
 </style>
 </head>
@@ -70,9 +70,9 @@
       <!-- Desktop links -->
       <div class="hidden md:flex items-center space-x-4">
         <a href="index.html" id="nav-back" class="text-gray-700 hover:text-blue-600 font-medium" data-key="nav-back">Home</a>
-        <a href="#" id="auth-link" class="text-gray-700 hover:text-blue-600 font-medium">Accedi</a>
+        <a href="#" id="auth-link" class="text-gray-700 hover:text-blue-600 font-medium" data-key="auth-login">Accedi</a>
         <a href="private.html" id="nav-directions" class="hidden text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1" data-key="nav-directions">
-          <i class="fa-solid fa-location-dot"></i> <span data-key="nav-directions">Indicazioni</span>
+          <i class="fa-solid fa-location-dot"></i> <span>Indicazioni</span>
         </a>
         <a href="#" id="logout-link" class="hidden text-gray-700 hover:text-red-600 font-medium" data-key="nav-logout">Esci</a>
         <a href="admin.html" id="admin-link" class="hidden text-gray-700 hover:text-purple-600 font-medium flex items-center gap-2">
@@ -93,30 +93,30 @@
       </div>
     </div>
   </div>
-
-  <!-- overlay (quando il menu è aperto) -->
-  <div id="mobile-overlay" aria-hidden="true"></div>
-
-  <!-- Mobile menu -->
-  <nav id="mobile-menu" class="md:hidden" aria-hidden="true">
-    <div class="flex flex-col p-4 space-y-2">
-      <a href="index.html" id="mobile-nav-back" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
-      <a href="#" id="mobile-auth-link" class="text-gray-700 hover:text-blue-600 font-medium">Accedi</a>
-      <a href="private.html" id="mobile-nav-directions" class="hidden text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1">
-        <i class="fa-solid fa-location-dot"></i> Indicazioni
-      </a>
-      <a href="#" id="mobile-logout-link" class="hidden text-gray-700 hover:text-red-600 font-medium">Esci</a>
-      <a href="admin.html" id="mobile-admin-link" class="hidden text-gray-700 hover:text-purple-600 font-medium flex items-center gap-2">
-        Admin <span id="mobile-admin-badge" class="hidden bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">ADMIN</span>
-      </a>
-      <select id="mobile-language-select" class="px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700">
-        <option value="it">🇮🇹 Italiano</option>
-        <option value="en">🇬🇧 English</option>
-        <option value="de">🇩🇪 Deutsch</option>
-      </select>
-    </div>
-  </nav>
 </header>
+
+<!-- overlay (quando il menu è aperto) - MOVED OUTSIDE header -->
+<div id="mobile-overlay" aria-hidden="true"></div>
+
+<!-- Mobile menu - MOVED OUTSIDE header -->
+<nav id="mobile-menu" class="md:hidden" aria-hidden="true">
+  <div class="flex flex-col p-4 space-y-2">
+    <a href="index.html" id="mobile-nav-back" class="text-gray-700 hover:text-blue-600 font-medium" data-key="nav-back">Home</a>
+    <a href="#" id="mobile-auth-link" class="text-gray-700 hover:text-blue-600 font-medium" data-key="auth-login">Accedi</a>
+    <a href="private.html" id="mobile-nav-directions" class="hidden text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1">
+      <i class="fa-solid fa-location-dot"></i> <span data-key="nav-directions">Indicazioni</span>
+    </a>
+    <a href="#" id="mobile-logout-link" class="hidden text-gray-700 hover:text-red-600 font-medium" data-key="nav-logout">Esci</a>
+    <a href="admin.html" id="mobile-admin-link" class="hidden text-gray-700 hover:text-purple-600 font-medium flex items-center gap-2">
+      Admin <span id="mobile-admin-badge" class="hidden bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">ADMIN</span>
+    </a>
+    <select id="mobile-language-select" class="px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700">
+      <option value="it">🇮🇹 Italiano</option>
+      <option value="en">🇬🇧 English</option>
+      <option value="de">🇩🇪 Deutsch</option>
+    </select>
+  </div>
+</nav>
 
 <!-- HERO -->
 <section class="hero-gradient pt-32 pb-20 relative overflow-hidden">
@@ -161,7 +161,7 @@
   </div>
 </footer>
 
-<!-- Calc bar (unchanged) -->
+<!-- Calc bar -->
 <div id="calc-bar" class="floating-calc hidden">
   <div class="glass-panel">
     <div class="accent-bar"></div>
@@ -220,10 +220,6 @@
 </div>
 
 <script type="module">
-/* =========================
-   Firebase + application code
-   ========================= */
-
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getFirestore, collection, onSnapshot, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
@@ -244,7 +240,6 @@ const collectionRef = collection(db, "prenotazioni casa mare");
 
 emailjs.init("BG7V9gDfHMArYHoiv");
 
-/* Global state */
 let bookedDates = [];
 let userBookedDates = new Set();
 let checkIn = null;
@@ -257,10 +252,10 @@ const ALLOWED_START_DAYS = [0,1];
 let ignoreAuthChange = false;
 let unsubscribeBookings = null;
 
-/* Translations */
 const translations = {
-  it: { /* ... same as before ... */ 
+  it: {
     "nav-location":"Lido delle Nazioni","nav-back":"Home","nav-logout":"Esci","nav-directions":"Indicazioni",
+    "auth-login":"Accedi",
     "hero-title":"Disponibilità e Prezzi 2026","hero-subtitle":"Seleziona le date del tuo soggiorno e conferma per prenotare, puoi effettuare la cancellazione in qualunque momento",
     "calendar-title":"Sign in","calendar-subtitle":"Accedi per scegliere check-in e check-out","select-end":"Scegli fine",
     "day":"giorno","days":"giorni","closed":"Chiuso","booked":"X","label-period":"Periodo Selezionato",
@@ -272,8 +267,8 @@ const translations = {
     "link-login":"Accedi","welcome":"Benvenuto/a","my-bookings":"Le mie prenotazioni","status-logged":"Scegli il periodo e prenota"
   },
   en: {
-    /* english - same as before */
     "nav-location":"Lido delle Nazioni","nav-back":"Home","nav-logout":"Logout","nav-directions":"Directions",
+    "auth-login":"Login",
     "hero-title":"Availability and Prices 2026","hero-subtitle":"Select your stay dates and confirm to book, you can cancel anytime",
     "calendar-title":"Sign in","calendar-subtitle":"Log in to choose check-in and check-out","select-end":"Choose end",
     "day":"day","days":"days","closed":"Closed","booked":"X","label-period":"Selected Period",
@@ -285,8 +280,8 @@ const translations = {
     "link-login":"Login","welcome":"Welcome","my-bookings":"My Bookings","status-logged":"Choose dates and book"
   },
   de: {
-    /* german - same as before */
     "nav-location":"Lido delle Nazioni","nav-back":"Home","nav-logout":"Abmelden","nav-directions":"Wegbeschreibung",
+    "auth-login":"Einloggen",
     "hero-title":"Verfügbarkeit und Preise 2026","hero-subtitle":"Wählen Sie Ihre Aufenthaltsdaten und bestätigen Sie die Buchung, Sie können jederzeit stornieren",
     "calendar-title":"Sign in","calendar-subtitle":"Melden Sie sich an, um Ein- und Auschecken auszuwählen.","select-end":"Ende wählen",
     "day":"Tag","days":"Tage","closed":"Geschlossen","booked":"X","label-period":"Ausgewählter Zeitraum",
@@ -302,7 +297,6 @@ const translations = {
 const dailyRates = { '05':98,'06':150,'07':200,'08':200,'09':120,'10':90 };
 const exceptions = { '2026-05-01':200,'2026-05-02':240,'2026-05-03':130,'2026-10-04':110 };
 
-/* Utility & language set */
 window.setLanguage = function(lang){
   currentLang = lang;
   localStorage.setItem('selectedLanguage', lang);
@@ -315,17 +309,14 @@ window.setLanguage = function(lang){
     }
   });
 
-  // sync selects
   const s1 = document.getElementById('language-select');
   const s2 = document.getElementById('mobile-language-select');
   if(s1) s1.value = lang;
   if(s2) s2.value = lang;
 
-  // update book button text
   const btnBook = document.getElementById('btn-book');
   if(btnBook) btnBook.textContent = translations[lang]["btn-book"];
 
-  // update UI texts if logged
   const user = auth.currentUser;
   if(user){
     const mainTitle = document.getElementById('main-title');
@@ -333,9 +324,20 @@ window.setLanguage = function(lang){
     const firstName = user.displayName ? user.displayName.split(' ')[0] : '';
     if(mainTitle) mainTitle.textContent = `${translations[currentLang]["welcome"]} ${firstName}`;
     if(statusText) statusText.textContent = translations[currentLang]["status-logged"];
+    
+    // Update auth link text when logged in
+    const authLink = document.getElementById('auth-link');
+    const mobileAuthLink = document.getElementById('mobile-auth-link');
+    if(authLink) authLink.textContent = firstName || user.email;
+    if(mobileAuthLink) mobileAuthLink.textContent = firstName || user.email;
+  } else {
+    // Update auth link text when logged out
+    const authLink = document.getElementById('auth-link');
+    const mobileAuthLink = document.getElementById('mobile-auth-link');
+    if(authLink) authLink.textContent = translations[lang]["auth-login"];
+    if(mobileAuthLink) mobileAuthLink.textContent = translations[lang]["auth-login"];
   }
 
-  // re-render calendars in new language
   const cal = document.getElementById('calendar-container');
   if(cal) renderAllCalendars();
   updateUI();
@@ -344,10 +346,9 @@ window.setLanguage = function(lang){
 function toTime(s){ return new Date(s).getTime(); }
 function isValidStart(dateStr){ return ALLOWED_START_DAYS.includes(new Date(dateStr).getDay()); }
 
-/* Booking selection logic */
 window.handleDateClick = function(dateStr){
   if(dateStr < SEASON_START || dateStr > SEASON_END) return;
-  if(bookedDates.includes(dateStr) && !userBookedDates.has(dateStr)) return; // can't select others' booked dates
+  if(bookedDates.includes(dateStr) && !userBookedDates.has(dateStr)) return;
   if(!checkIn || (checkIn && checkOut)){
     if(!isValidStart(dateStr)){ alert(currentLang === 'it' ? 'Check-in solo Domenica o Lunedì' : 'Check-in only Sunday or Monday'); return; }
     checkIn = dateStr; checkOut = null; updateUI(); return;
@@ -446,7 +447,6 @@ window.submitBooking = async function(){
       telefono: userPhone
     });
 
-    // email attempts (non critiche)
     try { 
       await emailjs.send('service_iu51adb','template_4mk8rrt',{
         to_email:"casamarenazioni@gmail.com",
@@ -471,7 +471,6 @@ window.submitBooking = async function(){
   finally{ btn.disabled=false; btn.innerText = originalText; }
 };
 
-/* Render calendar with user booked distinction */
 function renderMonth(year,month,monthName){
   const container = document.getElementById('calendar-container');
   const t = translations[currentLang] || translations.it;
@@ -518,7 +517,6 @@ window.renderAllCalendars = function(){
   mesi.forEach(m=>renderMonth(2026,m.id,m.nome));
 };
 
-/* Global listener (for everyone) - keeps bookedDates up to date */
 onSnapshot(collectionRef, snapshot => {
   bookedDates = [];
   snapshot.docs.forEach(docSnap => {
@@ -535,10 +533,9 @@ onSnapshot(collectionRef, snapshot => {
     }
   });
 
-  try { renderAllCalendars(); updateUI(); } catch(e){ /* ignore */ }
+  try { renderAllCalendars(); updateUI(); } catch(e){ }
 });
 
-/* Render user bookings list */
 function renderUserBookings(userBookings){
   const container = document.getElementById('user-bookings');
   const list = document.getElementById('booking-list');
@@ -552,12 +549,9 @@ function renderUserBookings(userBookings){
   container.classList.remove('hidden');
 }
 
-/* DOM ready initializations */
 document.addEventListener('DOMContentLoaded', ()=>{
-  // set current year
   document.getElementById('current-year').textContent = new Date().getFullYear();
 
-  // language init
   const savedLang = localStorage.getItem('selectedLanguage') || 'it';
   const s1 = document.getElementById('language-select');
   const s2 = document.getElementById('mobile-language-select');
@@ -568,7 +562,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
   if(s1) s1.addEventListener('change', e => setLanguage(e.target.value));
   if(s2) s2.addEventListener('change', e => setLanguage(e.target.value));
 
-  // auth popup links
   const authLink = document.getElementById('auth-link');
   const mobileAuthLink = document.getElementById('mobile-auth-link');
   const authModal = document.getElementById('authModal');
@@ -579,13 +572,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
     mobileAuthLink.addEventListener('click', e=>{ e.preventDefault(); authModal.classList.add('show'); document.getElementById('login-box').classList.remove('hidden'); document.getElementById('register-box').classList.add('hidden'); closeMobileMenuIfOpen(); });
   }
 
-  // show/hide login/register within popup
   const showRegister = document.getElementById('show-register');
   const showLogin = document.getElementById('show-login');
   if(showRegister) showRegister.addEventListener('click', e=>{ e.preventDefault(); document.getElementById('login-box').classList.add('hidden'); document.getElementById('register-box').classList.remove('hidden'); });
   if(showLogin) showLogin.addEventListener('click', e=>{ e.preventDefault(); document.getElementById('register-box').classList.add('hidden'); document.getElementById('login-box').classList.remove('hidden'); });
 
-  // register / login form handlers
   const registerForm = document.getElementById('register-form');
   if(registerForm){
     registerForm.addEventListener('submit', async e=>{
@@ -624,23 +615,19 @@ document.addEventListener('DOMContentLoaded', ()=>{
     });
   }
 
-  // logout links (desktop + mobile)
   const logoutLink = document.getElementById('logout-link');
   const mobileLogoutLink = document.getElementById('mobile-logout-link');
   if(logoutLink) logoutLink.addEventListener('click', async e=>{ e.preventDefault(); try{ await signOut(auth); } catch(err){ alert(err.message); } });
   if(mobileLogoutLink) mobileLogoutLink.addEventListener('click', async e=>{ e.preventDefault(); try{ await signOut(auth); closeMobileMenuIfOpen(); } catch(err){ alert(err.message); } });
 
-  // nav-back (desktop + mobile)
   const navBack = document.getElementById('nav-back');
   const mobileNavBack = document.getElementById('mobile-nav-back');
   if(navBack) navBack.addEventListener('click', e=>{ e.preventDefault(); window.location.href='index.html'; });
   if(mobileNavBack) mobileNavBack.addEventListener('click', e=>{ e.preventDefault(); closeMobileMenuIfOpen(); window.location.href='index.html'; });
 
-  // close auth modal button
   const closeAuthBtn = document.getElementById('closeAuthModalBtn');
   if(closeAuthBtn) closeAuthBtn.addEventListener('click', e=>{ e.preventDefault(); authModal.classList.remove('show'); });
 
-  // Mobile menu open/close handlers + overlay
   const menuBtn = document.getElementById('menu-btn');
   const mobileMenu = document.getElementById('mobile-menu');
   const mobileOverlay = document.getElementById('mobile-overlay');
@@ -666,16 +653,13 @@ document.addEventListener('DOMContentLoaded', ()=>{
     mobileOverlay.addEventListener('click', ()=> closeMobileMenu());
   }
 
-  // close mobile menu when clicking any link/select inside it
   mobileMenu.querySelectorAll('a, select').forEach(el => {
     el.addEventListener('click', ()=> setTimeout(()=> closeMobileMenu(), 60));
   });
 
-  // ensure language selects stay in sync: handled in setLanguage above
+  window.closeMobileMenuIfOpen = closeMobileMenuIfOpen;
+});
 
-}); // end DOMContentLoaded
-
-/* AUTH state handling: updates both desktop and mobile UI, and subscribes to bookings with userBookedDates */
 onAuthStateChanged(auth, async user => {
   if(ignoreAuthChange) return;
 
@@ -692,7 +676,6 @@ onAuthStateChanged(auth, async user => {
   const navDirections = document.getElementById('nav-directions');
   const authLink = document.getElementById('auth-link');
 
-  // mobile equivalents
   const mobileAuthLink = document.getElementById('mobile-auth-link');
   const mobileNavDirections = document.getElementById('mobile-nav-directions');
   const mobileLogoutLink = document.getElementById('mobile-logout-link');
@@ -700,21 +683,17 @@ onAuthStateChanged(auth, async user => {
   const mobileAdminBadge = document.getElementById('mobile-admin-badge');
 
   if(user){
-    // desktop
     if(authLink) authLink.textContent = user.displayName ? user.displayName.split(' ')[0] : user.email;
     if(loginBox) loginBox.classList.add('hidden'); if(registerBox) registerBox.classList.add('hidden');
     if(logoutLink) logoutLink.classList.remove('hidden'); if(calendarContainer) calendarContainer.classList.remove('hidden');
 
-    // mobile
     if(mobileAuthLink) mobileAuthLink.textContent = user.displayName ? user.displayName.split(' ')[0] : user.email;
     if(mobileLogoutLink) mobileLogoutLink.classList.remove('hidden');
 
-    // dynamic welcome text
     const firstName = user.displayName ? user.displayName.split(' ')[0] : '';
     if(mainTitle) mainTitle.textContent = `${translations[currentLang]["welcome"]} ${firstName}`;
     if(statusText) statusText.textContent = translations[currentLang]["status-logged"];
 
-    // role check for admin
     try {
       const utentiRef = collection(db,"utenti");
       const q = query(utentiRef, where("userId","==", user.uid));
@@ -729,10 +708,8 @@ onAuthStateChanged(auth, async user => {
       }
     } catch(e){ console.warn(e); }
 
-    // detach previous listener if exists
     if(typeof unsubscribeBookings === 'function') unsubscribeBookings();
 
-    // new listener that also populates userBookedDates
     unsubscribeBookings = onSnapshot(collectionRef, snapshot => {
       bookedDates = [];
       userBookedDates.clear();
@@ -768,24 +745,22 @@ onAuthStateChanged(auth, async user => {
     });
 
   } else {
-    // logged out
     if(typeof unsubscribeBookings === 'function') unsubscribeBookings();
     if(loginBox) loginBox.classList.remove('hidden'); if(registerBox) registerBox.classList.add('hidden');
     if(logoutLink) logoutLink.classList.add('hidden'); if(userBookingsBox) userBookingsBox.classList.add('hidden');
     if(calcBar) calcBar.classList.add('hidden');
     if(navDirections) navDirections.classList.add('hidden');
-    if(authLink) authLink.textContent = 'Accedi';
-    if(document.getElementById('mobile-auth-link')) document.getElementById('mobile-auth-link').textContent = 'Accedi';
-    if(document.getElementById('mobile-logout-link')) document.getElementById('mobile-logout-link').classList.add('hidden');
+    if(authLink) authLink.textContent = translations[currentLang]["auth-login"];
+    if(mobileAuthLink) mobileAuthLink.textContent = translations[currentLang]["auth-login"];
+    if(mobileLogoutLink) mobileLogoutLink.classList.add('hidden');
     if(mainTitle) mainTitle.textContent = translations[currentLang]["calendar-title"];
     if(statusText) statusText.textContent = translations[currentLang]["calendar-subtitle"];
     bookedDates = []; userBookedDates.clear(); checkIn = null; checkOut = null;
     if(adminLink) adminLink.classList.add('hidden'); if(adminBadge) adminBadge.classList.add('hidden');
-    if(document.getElementById('mobile-admin-link')) document.getElementById('mobile-admin-link').classList.add('hidden');
-    if(document.getElementById('mobile-admin-badge')) document.getElementById('mobile-admin-badge').classList.add('hidden');
+    if(mobileAdminLink) mobileAdminLink.classList.add('hidden');
+    if(mobileAdminBadge) mobileAdminBadge.classList.add('hidden');
 
-    // re-render so bookings disappear visually if needed
-    try { renderAllCalendars(); updateUI(); } catch(e){ /* ignore */ }
+    try { renderAllCalendars(); updateUI(); } catch(e){ }
   }
 });
 </script>
