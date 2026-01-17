@@ -349,7 +349,7 @@ function isValidStart(dateStr){ return ALLOWED_START_DAYS.includes(new Date(date
 window.handleDateClick = function(dateStr){
   if(dateStr < SEASON_START || dateStr > SEASON_END) return;
 
-  // Blocca qualsiasi data già prenotata, comprese quelle dell'utente loggato
+  // 1. Check if clicked date is already booked (generic check)
   if(bookedDates.includes(dateStr)) return;
 
   // Se non c'è check-in selezionato oppure entrambi check-in e check-out sono già selezionati
@@ -369,6 +369,27 @@ window.handleDateClick = function(dateStr){
     checkIn = dateStr;
     checkOut = null;
     updateUI();
+    return;
+  }
+
+  // 2. CHECK FOR OVERLAP (Il fix richiesto)
+  // Verifica che non ci siano date occupate TRA checkIn e la nuova dateStr
+  let tempDate = new Date(checkIn);
+  const targetDate = new Date(dateStr);
+  let overlapFound = false;
+  
+  // Scorre dal checkIn fino alla data cliccata
+  while (tempDate <= targetDate) {
+    const isoDate = tempDate.toISOString().split('T')[0];
+    if (bookedDates.includes(isoDate)) {
+      overlapFound = true;
+      break;
+    }
+    tempDate.setDate(tempDate.getDate() + 1);
+  }
+
+  if (overlapFound) {
+    alert(currentLang === 'it' ? "Il periodo selezionato include date già prenotate." : "Selected period includes booked dates.");
     return;
   }
 
@@ -540,24 +561,7 @@ window.renderAllCalendars = function(){
   mesi.forEach(m=>renderMonth(2026,m.id,m.nome));
 };
 
-onSnapshot(collectionRef, snapshot => {
-  bookedDates = [];
-  snapshot.docs.forEach(docSnap => {
-    const data = docSnap.data();
-    try {
-      let start = new Date(data.data_inizio);
-      let end = new Date(data.data_fine);
-      while (start <= end) {
-        bookedDates.push(start.toISOString().split('T')[0]);
-        start.setDate(start.getDate() + 1);
-      }
-    } catch (e) {
-      console.warn('Booking parse error', e);
-    }
-  });
-
-  try { renderAllCalendars(); updateUI(); } catch(e){ }
-});
+// --- REMOVED THE DUPLICATE onSnapshot HERE ---
 
 function renderUserBookings(userBookings){
   const container = document.getElementById('user-bookings');
@@ -684,11 +688,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
 });
 
 
-
-
-
-
-
 onAuthStateChanged(auth, async user => {
   if (ignoreAuthChange) return;
 
@@ -714,6 +713,8 @@ onAuthStateChanged(auth, async user => {
   if (typeof unsubscribeBookings === 'function') unsubscribeBookings();
 
   // 🔥 SNAPSHOT UNICO: SEMPRE ATTIVO (loggato o no)
+  // Questo listener è all'interno di authStateChanged così possiamo sapere chi è l'user attuale
+  // per colorare le sue prenotazioni di verde (userBookedDates)
   unsubscribeBookings = onSnapshot(collectionRef, snapshot => {
     bookedDates = [];
     userBookedDates.clear();
