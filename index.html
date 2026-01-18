@@ -1,1188 +1,853 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Galleria - Casa Vacanze Gianna</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary-blue: #1e40af;
-      --secondary-blue: #3b82f6;
-      --accent-gold: #f59e0b;
-      --warm-white: #fefcfb;
-      --soft-gray: #f8fafc;
-      --text-dark: #1f2937;
-      --text-light: #6b7280;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tariffe 2026 - Casa Vacanze Gianna</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-      color: var(--text-dark);
-    }
+<style>
+  :root{
+    --primary-blue:#1e40af;
+    --accent-gold:#f59e0b;
+  }
+  body{font-family:Inter, sans-serif;background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%);color:#1f2937;margin:0}
+  .heading-font{font-family:"Playfair Display",serif}
+  .glass-effect{backdrop-filter:blur(8px);background:rgba(255,255,255,0.85);border:1px solid rgba(255,255,255,0.2)}
+  .profile-pic{width:48px;height:48px;border-radius:50%;object-fit:cover}
+  .hero-gradient{background-image:url('spiaggia4.jpg');background-size:cover;background-position:center}
+  .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;width:100%}
+  .day-card{transition:all .18s ease;min-height:58px;cursor:pointer;border-radius:8px;border:1px solid #f1f5f9;background:white;display:flex;flex-direction:column;justify-content:space-between;padding:6px;overflow:hidden}
+  .day-card.disabled{background:#f3f4f6;opacity:0.6;cursor:not-allowed;border:none}
+  .day-card.booked{background:#fee2e2;border-color:#fca5a5;cursor:not-allowed;opacity:0.95}
+  .day-card.booked .price-tag{color:#ef4444 !important}
+  .day-card.booked-user{background:#d1fae5;border-color:#10b981;cursor:not-allowed;opacity:1}
+  .day-card.booked-user .day-num,.day-card.booked-user .price-tag{color:#065f46 !important}
+  .day-card.selected{background:var(--primary-blue) !important;color:#fff !important;border-color:var(--primary-blue)}
+  .day-card.selected .day-num,.day-card.selected .price-tag{color:#fff !important}
+  .day-card.in-range{background:#dbeafe !important}
+  .price-tag{font-size:.68rem;font-weight:700;color:#059669}
+  .floating-calc{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);z-index:1100;width:calc(100% - 30px);max-width:700px}
+  .glass-panel{background:rgba(255,255,255,0.98);backdrop-filter:blur(6px);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.12);border:1px solid #e5e7eb;overflow:hidden}
+  .accent-bar{height:4px;background:var(--accent-gold)}
+  .day-num{font-size:.75rem;font-weight:700;color:#475569}
+  .day-card.booked .day-num{color:#9b1c1c !important}
+  @media (max-width:640px){ .heading-font{font-size:1.25rem} }
 
-    body.no-scroll {
-      overflow: hidden;
-    }
+  /* Modal auth */
+  .auth-modal { position: fixed; inset: 0; display: none; justify-content: center; align-items: center; background: rgba(0,0,0,0.6); z-index: 10000; backdrop-filter: blur(6px); }
+  .auth-modal.show { display: flex; }
+  .auth-modal .modal-content { background: #fff; padding: 1.5rem; border-radius: 12px; width: 92%; max-width: 420px; position: relative; max-height: 90vh; overflow: auto; }
+  .auth-modal .modal-close { position: absolute; right: 12px; top: 8px; font-size: 20px; cursor:pointer; background: transparent; border: none; }
 
-    .heading-font {
-      font-family: 'Playfair Display', serif;
-    }
+  /* Mobile menu + overlay - FIXED z-index */
+  #mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 55; }
+  #mobile-overlay.show { display: block; }
+  #mobile-menu { display: none; position: fixed; top: 80px; left: 0; width: 100%; background: #fff; border-top: 1px solid #e5e7eb; box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 56; max-height: calc(100vh - 80px); overflow:auto; }
+  #mobile-menu.show { display: block; }
 
-    .hero-gradient {
-      background-image: url('spiaggia4.jpg');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
-
-    .glass-effect {
-      backdrop-filter: blur(8px);
-      background: rgba(255, 255, 255, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .card-hover {
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .card-hover:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    }
-
-    .gallery-item {
-      position: relative;
-      overflow: hidden;
-      border-radius: 1rem;
-      cursor: pointer;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .gallery-item:hover {
-      transform: translateY(-8px) scale(1.02);
-      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.3);
-    }
-
-    .gallery-item img {
-      width: 100%;
-      height: 300px;
-      object-fit: cover;
-      transition: transform 0.4s ease;
-    }
-
-    .gallery-item:hover img {
-      transform: scale(1.1);
-    }
-
-    .gallery-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(45deg, rgba(30, 58, 138, 0.7), rgba(6, 182, 212, 0.7));
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .gallery-item:hover .gallery-overlay {
-      opacity: 1;
-    }
-
-    .lightbox {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.95);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      backdrop-filter: blur(10px);
-    }
-
-    .lightbox.show {
-      display: flex;
-    }
-
-    .lightbox-content {
-      position: relative;
-      max-width: 90vw;
-      max-height: 90vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: auto;
-      background-color: transparent;
-    }
-
-    .lightbox-content img {
-      max-width: 70vw;
-      max-height: 70vh;
-      object-fit: contain;
-      display: block;
-      border-radius: 0.5rem;
-      box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
-      transition: transform 0.1s ease-out;
-      transform-origin: center center;
-      cursor: grab;
-    }
-
-    .lightbox-content img.dragging {
-      cursor: grabbing;
-    }
-
-    .lightbox-nav {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(10px);
-      border: none;
-      color: white;
-      font-size: 2rem;
-      width: 60px;
-      height: 60px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      border-radius: 50%;
-      transition: all 0.3s ease;
-      z-index: 10001;
-    }
-
-    .lightbox-nav:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: translateY(-50%) scale(1.1);
-    }
-
-    .lightbox-prev {
-      left: 2rem;
-    }
-
-    .lightbox-next {
-      right: 2rem;
-    }
-
-    .lightbox-close {
-      position: absolute;
-      top: 2rem;
-      right: 2rem;
-      background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(10px);
-      border: none;
-      color: white;
-      font-size: 2rem;
-      width: 60px;
-      height: 60px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      border-radius: 50%;
-      transition: all 0.3s ease;
-      z-index: 10001;
-    }
-
-    .lightbox-close:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: scale(1.1);
-    }
-
-    .floating-element {
-      animation: float 6s ease-in-out infinite;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-    }
-
-    .stagger-animation {
-      animation: staggerIn 0.6s ease-out forwards;
-      opacity: 0;
-      transform: translateY(20px);
-    }
-
-    @keyframes staggerIn {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .contact-modal, .auth-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 10000;
-      backdrop-filter: blur(10px);
-    }
-
-    .contact-modal.show, .auth-modal.show {
-      display: flex;
-    }
-
-    .modal-content {
-      background: white;
-      padding: 2rem;
-      border-radius: 1rem;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-      max-width: 90%;
-      width: 400px;
-      position: relative;
-      text-align: center;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .modal-close {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: none;
-      border: none;
-      font-size: 1.8rem;
-      color: #333;
-      cursor: pointer;
-      transition: color 0.3s ease;
-    }
-
-    .modal-close:hover {
-      color: #ef4444;
-    }
-
-    .profile-pic {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      object-fit: cover;
-      cursor: pointer;
-      transition: transform 0.3s ease;
-    }
-
-    .profile-pic:hover {
-      transform: scale(1.05);
-    }
-
-    #mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 55; }
-    #mobile-overlay.show { display: block; }
-    #mobile-menu { display: none; position: fixed; top: 80px; left: 0; width: 100%; background: #fff; border-top: 1px solid #e5e7eb; box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 56; max-height: calc(100vh - 80px); overflow:auto; }
-    #mobile-menu.show { display: block; }
-    #menu-btn { position: relative; z-index: 60; }
-
-    @media (max-width: 768px) {
-      .lightbox-nav, .lightbox-close {
-        font-size: 1.5rem;
-        width: 45px;
-        height: 45px;
-        padding: 0;
-      }
-      .lightbox-prev { left: 1rem; }
-      .lightbox-next { right: 1rem; }
-      .lightbox-close { top: 1rem; right: 1rem; }
-    }
-  </style>
+  /* Ensure hamburger clickable */
+  #menu-btn { position: relative; z-index: 60; }
+</style>
 </head>
 <body class="min-h-screen">
 
-  <header class="fixed top-0 w-full z-50 glass-effect">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center h-20">
-        <div class="flex items-center space-x-3">
-          <img id="gianna-profile-pic" src="gianna1.jpg" alt="Gianna" class="profile-pic">
-          <div>
-            <h1 class="heading-font text-xl font-semibold text-gray-900">Casa Gianna</h1>
-            <p class="text-sm text-gray-600" data-key="nav-location">Lido delle Nazioni</p>
-          </div>
+<header class="fixed top-0 w-full z-50 glass-effect">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-20">
+      <!-- Logo e info -->
+      <div class="flex items-center space-x-3">
+        <img src="gianna1.jpg" alt="Gianna" class="profile-pic">
+        <div>
+          <h1 class="heading-font text-xl font-semibold text-gray-900">Casa Gianna</h1>
+          <p class="text-sm text-gray-600" data-key="nav-location">Lido delle Nazioni</p>
         </div>
+      </div>
 
-        <div class="hidden md:flex items-center space-x-4">
-          <a href="index.html" class="text-gray-700 hover:text-blue-600 font-medium" data-key="nav-home-desktop">Home</a>
-          <a href="prezzario.html" class="text-gray-700 hover:text-blue-600 font-medium" data-key="nav-book">Prenota</a>
-          <a href="#" id="auth-link" class="text-gray-700 hover:text-blue-600 font-medium" data-key="auth-login">Accedi</a>
-          <a href="private.html" id="nav-directions" class="hidden text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1" data-key="nav-directions">
-            <i class="fa-solid fa-location-dot"></i> <span>Indicazioni</span>
-          </a>
-          <a href="#" id="logout-link" class="hidden text-gray-700 hover:text-red-600 font-medium" data-key="nav-logout">Esci</a>
-          <a href="admin.html" id="admin-link" class="hidden text-gray-700 hover:text-purple-600 font-medium flex items-center gap-2">
-            Admin <span id="admin-badge" class="hidden bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">ADMIN</span>
-          </a>
-          
-          <select id="language-select" class="px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700">
-            <option value="it">🇮🇹 Italiano</option>
-            <option value="en">🇬🇧 English</option>
-            <option value="de">🇩🇪 Deutsch</option>
+      <!-- Desktop links -->
+      <div class="hidden md:flex items-center space-x-4">
+        <a href="index.html" id="nav-back" class="text-gray-700 hover:text-blue-600 font-medium" data-key="nav-back">Home</a>
+
+<!-- Gallery link (desktop) -->
+<a href="gallery.html" id="nav-gallery" class="text-gray-700 hover:text-blue-600 font-medium" data-key="nav-gallery">Galleria</a>
+
+        <a href="#" id="auth-link" class="text-gray-700 hover:text-blue-600 font-medium" data-key="auth-login">Accedi</a>
+        <a href="private.html" id="nav-directions" class="hidden text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1" data-key="nav-directions">
+          <i class="fa-solid fa-location-dot"></i> <span>Indicazioni</span>
+        </a>
+        <a href="#" id="logout-link" class="hidden text-gray-700 hover:text-red-600 font-medium" data-key="nav-logout">Esci</a>
+        <a href="admin.html" id="admin-link" class="hidden text-gray-700 hover:text-purple-600 font-medium flex items-center gap-2">
+          Admin <span id="admin-badge" class="hidden bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">ADMIN</span>
+        </a>
+
+
+
+        <select id="language-select" class="px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700">
+          <option value="it">🇮🇹 Italiano</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="de">🇩🇪 Deutsch</option>
+        </select>
+      </div>
+
+      <!-- Hamburger mobile -->
+      <div class="md:hidden flex items-center">
+        <button id="menu-btn" class="text-gray-700 hover:text-blue-600 focus:outline-none" aria-label="Apri menu">
+          <i class="fa-solid fa-bars fa-lg"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- overlay (quando il menu è aperto) - MOVED OUTSIDE header -->
+<div id="mobile-overlay" aria-hidden="true"></div>
+
+<!-- Mobile menu - MOVED OUTSIDE header -->
+<nav id="mobile-menu" class="md:hidden" aria-hidden="true">
+  <div class="flex flex-col p-4 space-y-2">
+    <a href="index.html" id="mobile-nav-back" class="text-gray-700 hover:text-blue-600 font-medium" data-key="nav-back">Home</a>
+
+
+<!-- Gallery link (mobile) -->
+<a href="gallery.html" id="mobile-nav-gallery" class="text-gray-700 hover:text-blue-600 font-medium" data-key="nav-gallery">Galleria</a>
+
+
+    <a href="#" id="mobile-auth-link" class="text-gray-700 hover:text-blue-600 font-medium" data-key="auth-login">Accedi</a>
+    <a href="private.html" id="mobile-nav-directions" class="hidden text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1">
+      <i class="fa-solid fa-location-dot"></i> <span data-key="nav-directions">Indicazioni</span>
+    </a>
+    <a href="#" id="mobile-logout-link" class="hidden text-gray-700 hover:text-red-600 font-medium" data-key="nav-logout">Esci</a>
+    <a href="admin.html" id="mobile-admin-link" class="hidden text-gray-700 hover:text-purple-600 font-medium flex items-center gap-2">
+      Admin <span id="mobile-admin-badge" class="hidden bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">ADMIN</span>
+    </a>
+   
+
+
+ <select id="mobile-language-select" class="px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700">
+      <option value="it">🇮🇹 Italiano</option>
+      <option value="en">🇬🇧 English</option>
+      <option value="de">🇩🇪 Deutsch</option>
+    </select>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero-gradient pt-32 pb-20 relative overflow-hidden">
+  <div class="absolute inset-0 bg-black/20"></div>
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <div class="floating-element">
+      <h1 class="heading-font text-5xl md:text-7xl font-bold text-white mb-6"><span data-key="hero-title">Disponibilità e Prezzi 2026</span></h1>
+      <p class="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto" data-key="hero-subtitle">Seleziona le date del tuo soggiorno e conferma per prenotare, puoi effettuare la cancellazione in qualunque momento</p>
+    </div>
+  </div>
+</section>
+
+<!-- CALENDARI -->
+<section class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+      <h2 id="main-title" class="heading-font text-4xl font-bold text-gray-900 mb-4" data-key="calendar-title">Sign-in</h2>
+      <p id="status-text" class="text-xl text-gray-600" data-key="calendar-subtitle">accedi per scegliere check-in e check-out</p>
+    </div>
+    <div id="calendar-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </div>
+
+  <div id="user-bookings" class="max-w-3xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg border border-gray-200 hidden">
+    <h2 class="text-2xl font-bold mb-4 text-gray-800" data-key="my-bookings">Le mie prenotazioni</h2>
+    <ul id="booking-list" class="list-disc pl-5 text-gray-700"></ul>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="bg-gray-900 text-white py-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col md:flex-row justify-between items-center">
+      <div class="mb-6 md:mb-0">
+        <h3 class="heading-font text-2xl font-bold mb-2">Casa Vacanze Gianna</h3>
+        <p class="text-gray-400" data-key="footer-location">Lido delle Nazioni, Comacchio (FE), Italia</p>
+      </div>
+      <div class="text-center md:text-right">
+        <p class="text-gray-400">&copy; <span id="current-year"></span> Casa Vacanze Gianna</p>
+        <p class="text-gray-400 mt-2" data-key="footer-rights">Tutti i diritti riservati</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Calc bar -->
+<div id="calc-bar" class="floating-calc hidden">
+  <div class="glass-panel">
+    <div class="accent-bar"></div>
+    <div class="p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-4">
+        <div class="bg-blue-50 p-2.5 rounded-full text-blue-800"><i class="fa-solid fa-calendar-check"></i></div>
+        <div>
+          <p id="label-selected-period" class="text-[10px] uppercase font-bold text-slate-400 tracking-wider" data-key="label-period">Periodo Selezionato</p>
+          <p id="selected-dates" class="text-base font-bold text-blue-900">--</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-6 w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0">
+        <div class="text-right flex-grow">
+          <p id="label-nights" class="text-[10px] uppercase font-bold text-slate-400">0 giorni</p>
+          <p id="total-price" class="text-2xl font-black text-amber-600">€ 0</p>
+        </div>
+        <button id="btn-book" onclick="submitBooking()" class="hidden bg-blue-600 text-white font-bold py-2 px-6 rounded-full hover:bg-blue-700 transition-all shadow-lg">Prenota</button>
+        <button onclick="resetSelection()" class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP AUTH -->
+<div class="auth-modal" id="authModal" aria-hidden="true">
+  <div class="modal-content" role="dialog" aria-modal="true">
+    <button class="modal-close" id="closeAuthModalBtn" aria-label="Chiudi">×</button>
+
+    <div id="login-box">
+      <h2 class="text-2xl font-bold mb-4 text-gray-800" data-key="login-title">Area Privata</h2>
+      <form id="login-form" class="grid grid-cols-1 gap-4">
+        <input id="login-email" type="email" required placeholder="Email" class="border p-2 rounded">
+        <input id="login-password" type="password" required placeholder="Password" class="border p-2 rounded">
+        <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded font-bold hover:bg-blue-700" data-key="btn-login">Accedi</button>
+      </form>
+      <p class="mt-4 text-sm text-gray-500"><span data-key="login-no-account">Non hai un account?</span> <a href="#" id="show-register" class="text-blue-600 underline" data-key="link-register">Registrati</a></p>
+    </div>
+
+    <div id="register-box" class="hidden">
+      <h2 class="text-2xl font-bold mb-4 text-gray-800" data-key="register-title">Registrazione</h2>
+      <form id="register-form" class="grid grid-cols-1 gap-4">
+        <input id="register-name" type="text" required placeholder="Nome completo" class="border p-2 rounded">
+        <div class="flex gap-2">
+          <select id="register-phone-prefix" class="border p-2 rounded w-1/3">
+            <option value="+39">🇮🇹 +39</option><option value="+44">🇬🇧 +44</option><option value="+49">🇩🇪 +49</option><option value="+33">🇫🇷 +33</option><option value="+1">🇺🇸 +1</option>
           </select>
+          <input id="register-phone" type="tel" required placeholder="Numero di telefono" class="border p-2 rounded w-2/3">
         </div>
-
-        <div class="md:hidden flex items-center">
-          <button id="menu-btn" class="text-gray-700 hover:text-blue-600 focus:outline-none" aria-label="Apri menu">
-            <i class="fa-solid fa-bars fa-lg"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <div id="mobile-overlay" aria-hidden="true"></div>
-
-  <nav id="mobile-menu" class="md:hidden" aria-hidden="true">
-    <div class="flex flex-col p-4 space-y-2">
-      <a href="index.html" class="text-gray-700 hover:text-blue-600 font-medium" data-key="nav-home-mobile">Home</a>
-      <a href="prezzario.html" class="text-gray-700 hover:text-blue-600 font-medium" data-key="nav-book">Prenota</a>
-      <a href="#" id="mobile-auth-link" class="text-gray-700 hover:text-blue-600 font-medium" data-key="auth-login">Accedi</a>
-      <a href="private.html" id="mobile-nav-directions" class="hidden text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1">
-        <i class="fa-solid fa-location-dot"></i> <span data-key="nav-directions">Indicazioni</span>
-      </a>
-      <a href="#" id="mobile-logout-link" class="hidden text-gray-700 hover:text-red-600 font-medium" data-key="nav-logout">Esci</a>
-      <a href="admin.html" id="mobile-admin-link" class="hidden text-gray-700 hover:text-purple-600 font-medium flex items-center gap-2">
-        Admin <span id="mobile-admin-badge" class="hidden bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">ADMIN</span>
-      </a>
-
-      <select id="mobile-language-select" class="px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 mt-2">
-        <option value="it">🇮🇹 Italiano</option>
-        <option value="en">🇬🇧 English</option>
-        <option value="de">🇩🇪 Deutsch</option>
-      </select>
-    </div>
-  </nav>
-
-  <section class="hero-gradient pt-32 pb-20 relative overflow-hidden">
-    <div class="absolute inset-0 bg-black/20"></div>
-    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <div class="floating-element">
-        <h1 class="heading-font text-4xl md:text-6xl font-bold text-white mb-6">
-          <span data-key="hero-title">Galleria Casa Gianna</span>
-        </h1>
-        <p class="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto" data-key="hero-subtitle">
-          Scopri ogni angolo della tua prossima casa vacanze
-        </p>
-        <div class="flex justify-center space-x-4 text-white/80">
-          <span class="flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
-            </svg>
-            <span data-key="hero-photos">Dettagli Cristallini</span>
-          </span>
-          <span class="flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clip-rule="evenodd"></path>
-            </svg>
-            <span data-key="hero-rooms">Un Tour Completo</span>
-          </span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="py-20 bg-white" id="gallery-section">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-16">
-        <h2 class="heading-font text-4xl font-bold text-gray-900 mb-4" data-key="gallery-title">
-          Esplora Casa Gianna
-        </h2>
-        <p class="text-xl text-gray-600 max-w-2xl mx-auto" data-key="gallery-subtitle">
-          Ogni foto racconta la storia del tuo perfetto soggiorno al mare
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="gallery">
-      </div>
-    </div>
-  </section>
-
-  <section class="py-20 bg-gradient-to-br from-slate-50 to-blue-50" id="features-section">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-16">
-        <h2 class="heading-font text-4xl font-bold text-gray-900 mb-4" data-key="features-title">
-          Caratteristiche Uniche
-        </h2>
-        <p class="text-xl text-gray-600" data-key="features-subtitle">
-          Dettagli che fanno la differenza
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        <div class="card-hover bg-white p-8 rounded-2xl shadow-sm">
-          <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6">
-            <span class="text-white text-2xl">🖏️</span>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-900 mb-3" data-key="feature-beach-title">Vicino al Mare</h3>
-          <p class="text-gray-600" data-key="feature-beach-desc">200 metri dalla spiaggia di Lido delle Nazioni</p>
-        </div>
-
-        <div class="card-hover bg-white p-8 rounded-2xl shadow-sm">
-          <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6">
-            <span class="text-white text-2xl">🌿</span>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-900 mb-3" data-key="feature-garden-title">Giardino Privato</h3>
-          <p class="text-gray-600" data-key="feature-garden-desc">Spazi verdi per relax e privacy</p>
-        </div>
-
-        <div class="card-hover bg-white p-8 rounded-2xl shadow-sm">
-          <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6">
-            <span class="text-white text-2xl">🛏️</span>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-900 mb-3" data-key="feature-rooms-title">Camere Confortevoli</h3>
-          <p class="text-gray-600" data-key="feature-rooms-desc">Arredamento curato e spazi luminosi</p>
-        </div>
-
-        <div class="card-hover bg-white p-8 rounded-2xl shadow-sm">
-          <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mb-6">
-            <span class="text-white text-2xl">🍽️</span>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-900 mb-3" data-key="feature-kitchen-title">Cucina Completa</h3>
-          <p class="text-gray-600" data-key="feature-kitchen-desc">Elettrodomestici moderni e funzionali</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="py-20 bg-gradient-to-br from-blue-600 to-cyan-600" id="contact-section">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center text-white mb-16">
-        <h2 class="heading-font text-4xl font-bold mb-4" data-key="contact-title">
-          Ti Piace Quello Che Vedi?
-        </h2>
-        <p class="text-xl text-blue-100 max-w-2xl mx-auto" data-key="contact-subtitle">
-          Prenota ora la tua vacanza da sogno
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <a href="https://wa.me/393388984269?text=Ciao%2C%20vorrei%20ricevere%20maggiori%20informazioni%20su%20Casa%20Vacanze%20Gianna"
-           target="_blank"
-           class="card-hover bg-white/10 backdrop-blur-sm border border-white/20 p-8 rounded-2xl text-center text-white hover:bg-white/20 transition duration-300">
-          <div class="w-16 h-16 bg-green-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <span class="text-2xl">💬</span>
-          </div>
-          <h3 class="text-xl font-semibold mb-3" data-key="contact-whatsapp">WhatsApp</h3>
-          <p class="text-blue-100 mb-4" data-key="contact-whatsapp-desc">Risposta immediata</p>
-          <span class="text-white font-medium" data-key="contact-whatsapp-action">Chatta con noi</span>
-        </a>
-
-        <a href="mailto:casamarenazioni@gmail.com?subject=Richiesta%20di%20prenotazione%20per%20Casa%20Vacanze%20Gianna"
-           class="card-hover bg-white/10 backdrop-blur-sm border border-white/20 p-8 rounded-2xl text-center text-white hover:bg-white/20 transition duration-300">
-          <div class="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <span class="text-2xl">📧</span>
-          </div>
-          <h3 class="text-xl font-semibold mb-3" data-key="contact-email">Email</h3>
-          <p class="text-blue-100 mb-4" data-key="contact-email-desc">Richiesta dettagliata</p>
-          <span class="text-white font-medium" data-key="contact-email-action">Scrivi una mail</span>
-        </a>
-
-        <a href="https://www.google.com/maps?q=44.733726811572964,12.23992232510686"
-           target="_blank"
-           class="card-hover bg-white/10 backdrop-blur-sm border border-white/20 p-8 rounded-2xl text-center text-white hover:bg-white/20 transition duration-300">
-          <div class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <span class="text-2xl">📍</span>
-          </div>
-          <h3 class="text-xl font-semibold mb-3" data-key="contact-location">Posizione</h3>
-          <p class="text-blue-100 mb-4" data-key="contact-location-desc">Visualizza su Maps</p>
-          <span class="text-white font-medium" data-key="contact-location-action">Apri Maps</span>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <footer class="bg-gray-900 text-white py-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-col md:flex-row justify-between items-center">
-        <div class="mb-6 md:mb-0">
-          <h3 class="heading-font text-2xl font-bold mb-2">Casa Vacanze Gianna</h3>
-          <p class="text-gray-400" data-key="footer-location">Lido delle Nazioni, Comacchio (FE), Italia</p>
-        </div>
-        <div class="text-center md:text-right">
-          <p class="text-gray-400">© <span id="current-year"></span> Casa Vacanze Gianna</p>
-          <p class="text-gray-400 mt-2" data-key="footer-rights">Tutti i diritti riservati</p>
-        </div>
-      </div>
-    </div>
-  </footer>
-
-  <div class="lightbox" id="lightbox">
-    <button class="lightbox-close" id="closeBtn">×</button>
-    <button class="lightbox-nav lightbox-prev" id="prevBtn">◀</button>
-    <div class="lightbox-content">
-      <img id="lightbox-img" src="" alt="">
-    </div>
-    <button class="lightbox-nav lightbox-next" id="nextBtn">▶</button>
-  </div>
-
-  <div class="contact-modal" id="contactModal">
-    <div class="modal-content">
-      <button class="modal-close" id="closeContactModalBtn">×</button>
-      <h3 class="heading-font text-2xl font-bold mb-4" data-key="contact-card-title">Contatti di Gianna</h3>
-      <div class="text-center mb-4">
-        <img id="contact-modal-img" src="gianna1.jpg" alt="Gianna" class="mx-auto rounded-full w-32 h-32 object-cover mb-4">
-        <p class="text-lg font-semibold" data-key="contact-person-name">Gianna Santececca</p>
-      </div>
-      <div class="text-left space-y-2">
-        <p><strong data-key="contact-person-phone">Telefono:</strong> <a id="contact-phone-link" href="#" class="text-blue-600 hover:underline"></a></p>
-        <p><strong data-key="contact-person-whatsapp">WhatsApp:</strong> <a id="contact-whatsapp-link" href="#" target="_blank" class="text-blue-600 hover:underline"></a></p>
-        <p><strong data-key="contact-person-email">Email:</strong> <a id="contact-email-link" href="#" class="text-blue-600 hover:underline"></a></p>
-      </div>
+        <input id="register-email" type="email" required placeholder="Email" class="border p-2 rounded">
+        <input id="register-password" type="password" required placeholder="Password" class="border p-2 rounded">
+        <button id="register-btn" type="submit" class="bg-green-600 text-white py-2 px-4 rounded font-bold hover:bg-green-700" data-key="btn-register">Registrati</button>
+      </form>
+      <p class="mt-4 text-sm text-gray-500"><span data-key="register-already">Hai già un account?</span> <a href="#" id="show-login" class="text-blue-600 underline" data-key="link-login">Accedi</a></p>
     </div>
   </div>
+</div>
 
-  <div class="auth-modal" id="authModal">
-    <div class="modal-content">
-      <button class="modal-close" id="closeAuthModalBtn">×</button>
-      
-      <div id="login-box">
-        <h2 class="text-2xl font-bold mb-4 text-gray-800" data-key="login-title">Area Privata</h2>
-        <form id="login-form" class="grid grid-cols-1 gap-4">
-          <input id="login-email" type="email" required placeholder="Email" class="border p-2 rounded">
-          <input id="login-password" type="password" required placeholder="Password" class="border p-2 rounded">
-          <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded font-bold hover:bg-blue-700" data-key="btn-login">Accedi</button>
-        </form>
-        <p class="mt-4 text-sm text-gray-500"><span data-key="login-no-account">Non hai un account?</span> <a href="#" id="show-register" class="text-blue-600 underline" data-key="link-register">Registrati</a></p>
-      </div>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getFirestore, collection, onSnapshot, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-      <div id="register-box" class="hidden">
-        <h2 class="text-2xl font-bold mb-4 text-gray-800" data-key="register-title">Registrazione</h2>
-        <form id="register-form" class="grid grid-cols-1 gap-4">
-          <input id="register-name" type="text" required placeholder="Nome completo" class="border p-2 rounded">
-          <div class="flex gap-2">
-            <select id="register-phone-prefix" class="border p-2 rounded w-1/3">
-              <option value="+39">🇮🇹 +39</option>
-              <option value="+44">🇬🇧 +44</option>
-              <option value="+49">🇩🇪 +49</option>
-              <option value="+33">🇫🇷 +33</option>
-              <option value="+1">🇺🇸 +1</option>
-            </select>
-            <input id="register-phone" type="tel" required placeholder="Numero di telefono" class="border p-2 rounded w-2/3">
-          </div>
-          <input id="register-email" type="email" required placeholder="Email" class="border p-2 rounded">
-          <input id="register-password" type="password" required placeholder="Password" class="border p-2 rounded">
-          <button type="submit" class="bg-green-600 text-white py-2 px-4 rounded font-bold hover:bg-green-700" data-key="btn-register">Registrati</button>
-        </form>
-        <p class="mt-4 text-sm text-gray-500"><span data-key="register-already">Hai già un account?</span> <a href="#" id="show-login" class="text-blue-600 underline" data-key="link-login">Accedi</a></p>
-      </div>
-    </div>
-  </div>
+const firebaseConfig = {
+  apiKey: "AIzaSyALyvupZcBogh5KGATUQur4AeCrpZtzDLo",
+  authDomain: "casa-mare-c974a.firebaseapp.com",
+  projectId: "casa-mare-c974a",
+  storageBucket: "casa-mare-c974a.firebasestorage.app",
+  messagingSenderId: "596357064782",
+  appId: "1:596357064782:web:d86b0f1d57b7ea5989fb1f",
+  measurementId: "G-12EP9VBJQK"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth();
+const collectionRef = collection(db, "prenotazioni casa mare");
 
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getFirestore, collection, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+emailjs.init("BG7V9gDfHMArYHoiv");
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyALyvupZcBogh5KGATUQur4AeCrpZtzDLo",
-      authDomain: "casa-mare-c974a.firebaseapp.com",
-      projectId: "casa-mare-c974a",
-      storageBucket: "casa-mare-c974a.firebasestorage.app",
-      messagingSenderId: "596357064782",
-      appId: "1:596357064782:web:d86b0f1d57b7ea5989fb1f",
-      measurementId: "G-12EP9VBJQK"
-    };
+let bookedDates = [];
+let userBookedDates = new Set();
+let checkIn = null;
+let checkOut = null;
+let currentLang = 'it';
+const SEASON_START = '2026-05-01';
+const SEASON_END = '2026-10-04';
+const MIN_STAY_DAYS = 5;
+const ALLOWED_START_DAYS = [0,1];
+let ignoreAuthChange = false;
+let unsubscribeBookings = null;
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth();
+const translations = {
+  it: {
+    "nav-location":"Lido delle Nazioni","nav-back":"Home","nav-logout":"Esci","nav-directions":"Indicazioni",
+    "auth-login":"Accedi",
+    "hero-title":"Disponibilità e Prezzi 2026","hero-subtitle":"Seleziona le date del tuo soggiorno e conferma per prenotare, puoi effettuare la cancellazione in qualunque momento",
+    "calendar-title":"Sign in","calendar-subtitle":"Accedi per scegliere check-in e check-out","select-end":"Scegli fine",
+    "day":"giorno","days":"giorni","closed":"Chiuso","booked":"X","label-period":"Periodo Selezionato",
+    "footer-location":"Lido delle Nazioni, Comacchio (FE), Italia","footer-rights":"Tutti i diritti riservati",
+    "months":["Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre"],"weekdays":["Lu","Ma","Me","Gi","Ve","Sa","Do"],
+    "btn-book":"Prenota","login-title":"Area Privata","login-email":"Email","login-password":"Password","btn-login":"Accedi",
+    "login-no-account":"Non hai un account?","link-register":"Registrati","register-title":"Registrazione","register-name":"Nome completo",
+    "register-phone":"Numero di telefono","register-email":"Email","register-password":"Password","btn-register":"Registrati","register-already":"Hai già un account?",
+    "link-login":"Accedi","welcome":"Benvenuto/a","my-bookings":"Le mie prenotazioni","status-logged":"Scegli il periodo e prenota","nav-gallery":"Galleria"
+  },
+  en: {
+    "nav-location":"Lido delle Nazioni","nav-back":"Home","nav-logout":"Logout","nav-directions":"Directions",
+    "auth-login":"Login",
+    "hero-title":"Availability and Prices 2026","hero-subtitle":"Select your stay dates and confirm to book, you can cancel anytime",
+    "calendar-title":"Sign in","calendar-subtitle":"Log in to choose check-in and check-out","select-end":"Choose end",
+    "day":"day","days":"days","closed":"Closed","booked":"X","label-period":"Selected Period",
+    "footer-location":"Lido delle Nazioni, Comacchio (FE), Italy","footer-rights":"All rights reserved",
+    "months":["May","June","July","August","September","October"],"weekdays":["Mo","Tu","We","Th","Fr","Sa","Su"],
+    "btn-book":"Book","login-title":"Private Area","login-email":"Email","login-password":"Password","btn-login":"Login",
+    "login-no-account":"Don't have an account?","link-register":"Register","register-title":"Registration","register-name":"Full Name",
+    "register-phone":"Phone Number","register-email":"Email","register-password":"Password","btn-register":"Register","register-already":"Already have an account?",
+    "link-login":"Login","welcome":"Welcome","my-bookings":"My Bookings","status-logged":"Choose dates and book","nav-gallery":"Gallery"
+  },
+  de: {
+    "nav-location":"Lido delle Nazioni","nav-back":"Home","nav-logout":"Abmelden","nav-directions":"Wegbeschreibung",
+    "auth-login":"Einloggen",
+    "hero-title":"Verfügbarkeit und Preise 2026","hero-subtitle":"Wählen Sie Ihre Aufenthaltsdaten und bestätigen Sie die Buchung, Sie können jederzeit stornieren",
+    "calendar-title":"Sign in","calendar-subtitle":"Melden Sie sich an, um Ein- und Auschecken auszuwählen.","select-end":"Ende wählen",
+    "day":"Tag","days":"Tage","closed":"Geschlossen","booked":"X","label-period":"Ausgewählter Zeitraum",
+    "footer-location":"Lido delle Nazioni, Comacchio (FE), Italien","footer-rights":"Alle Rechte vorbehalten",
+    "months":["Mai","Juni","Juli","August","September","Oktober"],"weekdays":["Mo","Di","Mi","Do","Fr","Sa","So"],
+    "btn-book":"Buchen","login-title":"Privater Bereich","login-email":"Email","login-password":"Passwort","btn-login":"Einloggen",
+    "login-no-account":"Noch kein Konto?","link-register":"Registrieren","register-title":"Registrierung","register-name":"Vollständiger Name",
+    "register-phone":"Telefonnummer","register-email":"Email","register-password":"Passwort","btn-register":"Registrieren","register-already":"Schon ein Konto?",
+    "link-login":"Einloggen","welcome":"Willkommen","my-bookings":"Meine Buchungen","status-logged":"Zeitraum wählen und buchen","nav-gallery":"Galerie"
+  }
+};
 
-    const galleryImages = [
-      { src: "casa29.jpg", key: "gallery-img-1" },
-      { src: "casa35.jpg", key: "gallery-img-2" },
-      { src: "casa27.jpg", key: "gallery-img-3" },
-      { src: "casa14.jpg", key: "gallery-img-4" },
-      { src: "casa26.jpg", key: "gallery-img-5" },
-      { src: "casa37.jpg", key: "gallery-img-6" },
-      { src: "casa17.jpg", key: "gallery-img-7" },
-      { src: "casa2.jpg", key: "gallery-img-8" },
-      { src: "casa32.jpg", key: "gallery-img-9" },
-      { src: "casa11.jpg", key: "gallery-img-10" },
-      { src: "casa31.jpg", key: "gallery-img-11" },
-      { src: "casa36.png", key: "gallery-img-12" }
-    ];
+const dailyRates = { '05':98,'06':150,'07':200,'08':200,'09':120,'10':90 };
+const exceptions = { '2026-05-01':200,'2026-05-02':240,'2026-05-03':130,'2026-10-04':110 };
 
-    const contactDetails = {
-        name: "Gianna Santececca",
-        phone: "+393388984269",
-        whatsapp: "+393388984269",
-        email: "casamarenazioni@gmail.com"
-    };
+window.setLanguage = function(lang){
+  currentLang = lang;
+  localStorage.setItem('selectedLanguage', lang);
 
-    let currentIndex = 0;
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
-    const closeBtn = document.getElementById('closeBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const prevBtn = document.getElementById('prevBtn');
-    const gallery = document.getElementById('gallery');
-    const lightboxContent = document.querySelector('.lightbox-content');
-    let currentZoom = 1;
-    const zoomStep = 0.1;
+  document.querySelectorAll('[data-key]').forEach(el=>{
+    const key = el.getAttribute('data-key');
+    if(translations[lang] && translations[lang][key]) {
+      if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = translations[lang][key];
+      else el.textContent = translations[lang][key];
+    }
+  });
 
-    const profilePic = document.getElementById('gianna-profile-pic');
-    const contactModal = document.getElementById('contactModal');
-    const closeContactModalBtn = document.getElementById('closeContactModalBtn');
-    const contactModalImg = document.getElementById('contact-modal-img');
-    const contactPhoneLink = document.getElementById('contact-phone-link');
-    const contactWhatsappLink = document.getElementById('contact-whatsapp-link');
-    const contactEmailLink = document.getElementById('contact-email-link');
+  const s1 = document.getElementById('language-select');
+  const s2 = document.getElementById('mobile-language-select');
+  if(s1) s1.value = lang;
+  if(s2) s2.value = lang;
+
+  const btnBook = document.getElementById('btn-book');
+  if(btnBook) btnBook.textContent = translations[lang]["btn-book"];
+
+  const user = auth.currentUser;
+  if(user){
+    const mainTitle = document.getElementById('main-title');
+    const statusText = document.getElementById('status-text');
+    const firstName = user.displayName ? user.displayName.split(' ')[0] : '';
+    if(mainTitle) mainTitle.textContent = `${translations[currentLang]["welcome"]} ${firstName}`;
+    if(statusText) statusText.textContent = translations[currentLang]["status-logged"];
     
+    // Update auth link text when logged in
     const authLink = document.getElementById('auth-link');
     const mobileAuthLink = document.getElementById('mobile-auth-link');
-    const logoutLink = document.getElementById('logout-link');
-    const mobileLogoutLink = document.getElementById('mobile-logout-link');
-    
-    const authModal = document.getElementById('authModal');
-    const closeAuthModalBtn = document.getElementById('closeAuthModalBtn');
-    const loginBox = document.getElementById('login-box');
-    const registerBox = document.getElementById('register-box');
-    const showRegister = document.getElementById('show-register');
-    const showLogin = document.getElementById('show-login');
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
+    if(authLink) authLink.textContent = firstName || user.email;
+    if(mobileAuthLink) mobileAuthLink.textContent = firstName || user.email;
+  } else {
+    // Update auth link text when logged out
+    const authLink = document.getElementById('auth-link');
+    const mobileAuthLink = document.getElementById('mobile-auth-link');
+    if(authLink) authLink.textContent = translations[lang]["auth-login"];
+    if(mobileAuthLink) mobileAuthLink.textContent = translations[lang]["auth-login"];
+  }
 
-    const menuBtn = document.getElementById('menu-btn');
-    const mobileMenu = document.getElementById('mobile-menu');
-    const mobileOverlay = document.getElementById('mobile-overlay');
+  const cal = document.getElementById('calendar-container');
+  if(cal) renderAllCalendars();
+  updateUI();
+};
 
-    function openMobileMenu(){
-      mobileMenu.classList.add('show');
-      mobileOverlay.classList.add('show');
-      document.body.style.overflow = 'hidden';
-    }
-    function closeMobileMenu(){
-      mobileMenu.classList.remove('show');
-      mobileOverlay.classList.remove('show');
-      document.body.style.overflow = 'auto';
-    }
-    function closeMobileMenuIfOpen(){ if(mobileMenu.classList.contains('show')) closeMobileMenu(); }
+function toTime(s){ return new Date(s).getTime(); }
+function isValidStart(dateStr){ return ALLOWED_START_DAYS.includes(new Date(dateStr).getDay()); }
 
-    if(menuBtn){
-      menuBtn.addEventListener('click', () => {
-        if(mobileMenu.classList.contains('show')) closeMobileMenu(); else openMobileMenu();
-      });
+window.handleDateClick = function(dateStr){
+  if(dateStr < SEASON_START || dateStr > SEASON_END) return;
+
+  // 1. Check if clicked date is already booked (generic check)
+  if(bookedDates.includes(dateStr)) return;
+
+  // Se non c'è check-in selezionato oppure entrambi check-in e check-out sono già selezionati
+  if(!checkIn || (checkIn && checkOut)){
+    if(!isValidStart(dateStr)){
+      alert(currentLang === 'it' ? 'Check-in solo Domenica o Lunedì' : 'Check-in only Sunday or Monday');
+      return;
     }
-    if(mobileOverlay){
-      mobileOverlay.addEventListener('click', closeMobileMenu);
+    checkIn = dateStr;
+    checkOut = null;
+    updateUI();
+    return;
+  }
+
+  // Se l'utente clicca prima della data di check-in corrente
+  if(dateStr <= checkIn){
+    checkIn = dateStr;
+    checkOut = null;
+    updateUI();
+    return;
+  }
+
+  // 2. CHECK FOR OVERLAP (Il fix richiesto)
+  // Verifica che non ci siano date occupate TRA checkIn e la nuova dateStr
+  let tempDate = new Date(checkIn);
+  const targetDate = new Date(dateStr);
+  let overlapFound = false;
+  
+  // Scorre dal checkIn fino alla data cliccata
+  while (tempDate <= targetDate) {
+    const isoDate = tempDate.toISOString().split('T')[0];
+    if (bookedDates.includes(isoDate)) {
+      overlapFound = true;
+      break;
     }
-    mobileMenu.querySelectorAll('a').forEach(el => {
-      el.addEventListener('click', () => setTimeout(closeMobileMenu, 60));
+    tempDate.setDate(tempDate.getDate() + 1);
+  }
+
+  if (overlapFound) {
+    alert(currentLang === 'it' ? "Il periodo selezionato include date già prenotate." : "Selected period includes booked dates.");
+    return;
+  }
+
+  // Calcola la durata e verifica il soggiorno minimo
+  const diffDays = Math.floor((toTime(dateStr) - toTime(checkIn)) / (24*60*60*1000)) + 1;
+  if(diffDays < MIN_STAY_DAYS){
+    alert(`${currentLang === 'it' ? 'Soggiorno minimo' : 'Min stay'} ${MIN_STAY_DAYS} ${translations[currentLang]["days"]}`);
+    return;
+  }
+
+  // Tutto ok, seleziona check-out
+  checkOut = dateStr;
+  updateUI();
+};
+
+window.resetSelection = function(){ checkIn=null; checkOut=null; updateUI(); };
+
+function updateUI(){
+  document.querySelectorAll('.day-card').forEach(card=>{
+    const date = card.dataset.date;
+    card.classList.remove('selected','in-range');
+    if(!date) return;
+    if(checkIn && checkOut){
+      const t = toTime(date);
+      const t1 = toTime(checkIn);
+      const t2 = toTime(checkOut);
+      if(t === t1 || t === t2) card.classList.add('selected');
+      else if(t > t1 && t < t2) card.classList.add('in-range');
+    } else if(checkIn){
+      if(date === checkIn) card.classList.add('selected');
+    }
+  });
+
+  const bar = document.getElementById('calc-bar');
+  const btnBook = document.getElementById('btn-book');
+  if(checkIn){
+    bar.classList.remove('hidden');
+    const d1 = new Date(checkIn).toLocaleDateString(currentLang,{day:'numeric',month:'short'});
+    if(checkOut){
+      const d2 = new Date(checkOut).toLocaleDateString(currentLang,{day:'numeric',month:'short'});
+      document.getElementById('selected-dates').textContent = `${d1} — ${d2}`;
+      btnBook.classList.remove('hidden');
+      calculateTotal();
+    } else {
+      document.getElementById('selected-dates').textContent = `${d1} — ${translations[currentLang]["select-end"]}`;
+      document.getElementById('total-price').textContent = `€ --`;
+      document.getElementById('label-nights').textContent = translations[currentLang]["select-end"];
+      btnBook.classList.add('hidden');
+    }
+  } else {
+    bar.classList.add('hidden');
+  }
+}
+
+function calculateTotal(){
+  let total=0, daysCount=0;
+  let cur = new Date(checkIn), end = new Date(checkOut);
+  while(cur <= end){
+    const dateStr = cur.toISOString().split('T')[0];
+    total += (exceptions[dateStr] || dailyRates[dateStr.split('-')[1]] || 0);
+    daysCount++;
+    cur.setDate(cur.getDate()+1);
+  }
+  document.getElementById('total-price').textContent = `€ ${total}`;
+  document.getElementById('label-nights').textContent = `${daysCount} ${daysCount===1?translations[currentLang]["day"]:translations[currentLang]["days"]}`;
+  return total;
+}
+
+window.submitBooking = async function(){
+  if(!checkIn || !checkOut){ alert("Seleziona date!"); return; }
+  const user = auth.currentUser;
+  if(!user){ 
+    const modal = document.getElementById('authModal');
+    if(modal) modal.classList.add('show');
+    return; 
+  }
+
+  const estimatedPrice = calculateTotal();
+  const btn=document.getElementById('btn-book'); 
+  btn.disabled=true; 
+  const originalText = btn.innerText;
+  btn.innerText="...";
+
+  try{
+    let userPhone="Non fornito";
+    const utentiRef = collection(db,"utenti");
+    const qUtenti = query(utentiRef, where("userId","==", user.uid));
+    const utentiSnap = await getDocs(qUtenti);
+    if(!utentiSnap.empty) userPhone = utentiSnap.docs[0].data().telefono || "Non fornito";
+
+    await addDoc(collectionRef, {
+      nome: user.displayName || "Nome non disponibile",
+      data_inizio: checkIn,
+      data_fine: checkOut,
+      prezzo_preventivato: estimatedPrice,
+      timestamp: new Date(),
+      userId: user.uid,
+      email: user.email,
+      telefono: userPhone
     });
 
-    function openContactModal() {
-      const lang = document.documentElement.lang;
-      contactModalImg.src = "gianna1.jpg";
-      document.querySelector('#contactModal [data-key="contact-person-name"]').textContent = translations[lang]["contact-person-name"];
-      contactPhoneLink.href = `tel:${contactDetails.phone}`;
-      contactPhoneLink.textContent = contactDetails.phone;
-      contactWhatsappLink.href = `https://wa.me/${contactDetails.whatsapp}`;
-      contactWhatsappLink.textContent = contactDetails.whatsapp;
-      contactEmailLink.href = `mailto:${contactDetails.email}`;
-      contactEmailLink.textContent = contactDetails.email;
-      contactModal.classList.add('show');
-      document.body.classList.add('no-scroll');
-    }
-
-    function closeContactModal() {
-      contactModal.classList.remove('show');
-      document.body.classList.remove('no-scroll');
-    }
-
-    function openAuthModal() {
-      closeMobileMenuIfOpen();
-      authModal.classList.add('show');
-      loginBox.classList.remove('hidden');
-      registerBox.classList.add('hidden');
-      document.body.classList.add('no-scroll');
-    }
-
-    function closeAuthModal() {
-      authModal.classList.remove('show');
-      document.body.classList.remove('no-scroll');
-    }
-
-    if (profilePic) profilePic.addEventListener('click', openContactModal);
-    if (closeContactModalBtn) closeContactModalBtn.addEventListener('click', closeContactModal);
-    if (closeAuthModalBtn) closeAuthModalBtn.addEventListener('click', closeAuthModal);
-
-    const handleAuthClick = (e) => {
-        e.preventDefault();
-        const user = auth.currentUser;
-        if (!user) {
-          openAuthModal();
-        }
-    };
-
-    if (authLink) authLink.addEventListener('click', handleAuthClick);
-    if (mobileAuthLink) mobileAuthLink.addEventListener('click', handleAuthClick);
-
-    if (showRegister) {
-      showRegister.addEventListener('click', (e) => {
-        e.preventDefault();
-        loginBox.classList.add('hidden');
-        registerBox.classList.remove('hidden');
+    try { 
+      await emailjs.send('service_iu51adb','template_4mk8rrt',{
+        to_email:"casamarenazioni@gmail.com",
+        user_name:user.displayName||"Nome non disponibile",
+        user_email:user.email,
+        user_phone:userPhone,
+        checkin_date:checkIn, checkout_date:checkOut, estimated_price:`€ ${estimatedPrice}`
       });
-    }
+    } catch(e){ console.warn('email host error', e); }
 
-    if (showLogin) {
-      showLogin.addEventListener('click', (e) => {
-        e.preventDefault();
-        registerBox.classList.add('hidden');
-        loginBox.classList.remove('hidden');
+    try {
+      await emailjs.send('service_iu51adb','guest_confirmation',{
+        to_email:user.email, user_name:user.displayName||"Guest",
+        checkin_date: checkIn, checkout_date: checkOut, estimated_price:`€ ${estimatedPrice}`,
+        property_name:"Casa Vacanze Gianna", host_email:"casamarenazioni@gmail.com"
       });
-    }
+      alert(currentLang === 'it' ? "Prenotazione salvata! Email inviata." : "Booking saved! Email sent.");
+    } catch(e){ alert(currentLang === 'it' ? "Prenotazione salvata! (errore invio email)" : "Booking saved! (email error)"); }
 
-    if (registerForm) {
-      registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('register-email').value;
-        const password = document.getElementById('register-password').value;
-        const nome = document.getElementById('register-name').value;
-        const prefix = document.getElementById('register-phone-prefix').value;
-        const phone = document.getElementById('register-phone').value;
-        const fullPhone = prefix + phone;
+    resetSelection();
+  } catch(err){ alert("Error: "+err.message); }
+  finally{ btn.disabled=false; btn.innerText = originalText; }
+};
 
-        try {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          await updateProfile(userCredential.user, { displayName: nome });
-          await addDoc(collection(db, "utenti"), { 
-            userId: userCredential.user.uid, 
-            nome, 
-            telefono: fullPhone, 
-            email 
-          });
-          
-          registerForm.reset();
-          closeAuthModal();
-          alert("Registrazione completata! Ora puoi accedere all'area riservata.");
-        } catch (err) {
-          alert("Errore durante la registrazione: " + err.message);
-        }
-      });
-    }
+function renderMonth(year,month,monthName){
+  const container = document.getElementById('calendar-container');
+  const t = translations[currentLang] || translations.it;
+  const firstDay = new Date(year,month,1).getDay();
+  const daysInMonth = new Date(year,month+1,0).getDate();
+  const adjustedStart = firstDay===0?6:firstDay-1;
 
-    if (loginForm) {
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
+  let html = `<div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-lg">
+    <h3 class="heading-font text-2xl font-bold mb-6 text-gray-900 flex justify-between items-center border-b pb-3">
+      <span class="truncate">${monthName}</span> <span class="text-slate-400 font-light text-base ml-2">${year}</span>
+    </h3>
+    <div class="calendar-grid">
+    ${t.weekdays.map(d=>`<div class="text-center text-xs font-bold text-slate-400 uppercase pb-2">${d}</div>`).join('')}
+    ${Array(adjustedStart).fill('<div></div>').join('')}`;
 
-        try {
-          await signInWithEmailAndPassword(auth, email, password);
-          loginForm.reset();
-          closeAuthModal();
-        } catch (err) {
-          alert("Errore durante il login: " + err.message);
-        }
-      });
-    }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isBooked = bookedDates.includes(dateStr);
+    const isUserBooked = userBookedDates.has(dateStr);
+    const price = exceptions[dateStr] || dailyRates[dateStr.split('-')[1]];
+    const isClosed = dateStr < SEASON_START || dateStr > SEASON_END;
 
-    const handleLogout = async (e) => {
+    let classes = 'day-card active';
+    if (isClosed) classes = 'day-card disabled';
+    else if (isBooked) classes = isUserBooked ? 'day-card booked-user' : 'day-card booked';
+
+    const label = isClosed ? `<span class="text-[9px] text-slate-300">${t.closed}</span>` : (isBooked ? `<span class="price-tag">${t.booked}</span>` : `<span class="price-tag">€${price}</span>`);
+
+    html += `<div class="${classes}" data-date="${dateStr}" onclick="handleDateClick('${dateStr}')">
+      <span class="day-num">${d}</span>
+      <div class="text-center">${label}</div>
+    </div>`;
+  }
+
+  html += `</div></div>`;
+  container.innerHTML += html;
+}
+
+window.renderAllCalendars = function(){
+  const container = document.getElementById('calendar-container');
+  container.innerHTML = "";
+  const t = translations[currentLang] || translations.it;
+  const mesi = [0,1,2,3,4,5].map(i=>({id:4+i,nome:t.months[i]}));
+  mesi.forEach(m=>renderMonth(2026,m.id,m.nome));
+};
+
+// --- REMOVED THE DUPLICATE onSnapshot HERE ---
+
+function renderUserBookings(userBookings){
+  const container = document.getElementById('user-bookings');
+  const list = document.getElementById('booking-list');
+  list.innerHTML = "";
+  userBookings.forEach(bk=>{
+    const li = document.createElement('li');
+    li.className = "mb-2";
+    li.textContent = `${bk.start} — ${bk.end}`;
+    list.appendChild(li);
+  });
+  container.classList.remove('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('current-year').textContent = new Date().getFullYear();
+
+  const savedLang = localStorage.getItem('selectedLanguage') || 'it';
+  const s1 = document.getElementById('language-select');
+  const s2 = document.getElementById('mobile-language-select');
+  if(s1) s1.value = savedLang;
+  if(s2) s2.value = savedLang;
+  setLanguage(savedLang);
+
+  if(s1) s1.addEventListener('change', e => setLanguage(e.target.value));
+  if(s2) s2.addEventListener('change', e => setLanguage(e.target.value));
+
+  const authLink = document.getElementById('auth-link');
+  const mobileAuthLink = document.getElementById('mobile-auth-link');
+  const authModal = document.getElementById('authModal');
+  if(authLink){
+    authLink.addEventListener('click', e=>{ e.preventDefault(); authModal.classList.add('show'); document.getElementById('login-box').classList.remove('hidden'); document.getElementById('register-box').classList.add('hidden'); });
+  }
+  if(mobileAuthLink){
+    mobileAuthLink.addEventListener('click', e=>{ e.preventDefault(); authModal.classList.add('show'); document.getElementById('login-box').classList.remove('hidden'); document.getElementById('register-box').classList.add('hidden'); closeMobileMenuIfOpen(); });
+  }
+
+  const showRegister = document.getElementById('show-register');
+  const showLogin = document.getElementById('show-login');
+  if(showRegister) showRegister.addEventListener('click', e=>{ e.preventDefault(); document.getElementById('login-box').classList.add('hidden'); document.getElementById('register-box').classList.remove('hidden'); });
+  if(showLogin) showLogin.addEventListener('click', e=>{ e.preventDefault(); document.getElementById('register-box').classList.add('hidden'); document.getElementById('login-box').classList.remove('hidden'); });
+
+  const registerForm = document.getElementById('register-form');
+  if(registerForm){
+    registerForm.addEventListener('submit', async e=>{
       e.preventDefault();
-      try {
+      ignoreAuthChange = true;
+      const email = document.getElementById('register-email').value;
+      const password = document.getElementById('register-password').value;
+      const nome = document.getElementById('register-name').value;
+      const prefix = document.getElementById('register-phone-prefix').value;
+      const phone = document.getElementById('register-phone').value;
+      const fullPhone = prefix + phone;
+      try{
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName: nome });
+        await addDoc(collection(db,"utenti"), { userId: userCredential.user.uid, nome, telefono: fullPhone, email });
         await signOut(auth);
-        closeMobileMenuIfOpen();
-      } catch (err) {
-        alert("Errore durante il logout: " + err.message);
-      }
-    };
+        registerForm.reset();
+        document.getElementById('register-box').classList.add('hidden');
+        document.getElementById('login-box').classList.remove('hidden');
+        alert("OK!");
+      } catch(err){ alert(err.message); } finally { setTimeout(()=>{ ignoreAuthChange = false; }, 300); }
+    });
+  }
 
-    if (logoutLink) logoutLink.addEventListener('click', handleLogout);
-    if (mobileLogoutLink) mobileLogoutLink.addEventListener('click', handleLogout);
+  const loginForm = document.getElementById('login-form');
+  if(loginForm){
+    loginForm.addEventListener('submit', async e=>{
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      try{
+        await signInWithEmailAndPassword(auth, email, password);
+        loginForm.reset();
+        authModal.classList.remove('show');
+      } catch(err){ alert(err.message); }
+    });
+  }
 
-    onAuthStateChanged(auth, async (user) => {
-      const adminLink = document.getElementById('admin-link');
-      const adminBadge = document.getElementById('admin-badge');
-      const mobileAdminLink = document.getElementById('mobile-admin-link');
-      const mobileAdminBadge = document.getElementById('mobile-admin-badge');
-      const navDirections = document.getElementById('nav-directions');
-      const mobileNavDirections = document.getElementById('mobile-nav-directions');
+  const logoutLink = document.getElementById('logout-link');
+  const mobileLogoutLink = document.getElementById('mobile-logout-link');
+  if(logoutLink) logoutLink.addEventListener('click', async e=>{ e.preventDefault(); try{ await signOut(auth); } catch(err){ alert(err.message); } });
+  if(mobileLogoutLink) mobileLogoutLink.addEventListener('click', async e=>{ e.preventDefault(); try{ await signOut(auth); closeMobileMenuIfOpen(); } catch(err){ alert(err.message); } });
 
-      if (user) {
-        const firstName = user.displayName ? user.displayName.split(' ')[0] : user.email.split('@')[0];
-        if(authLink) authLink.textContent = firstName;
-        if(mobileAuthLink) mobileAuthLink.textContent = firstName;
-        
-        if(logoutLink) logoutLink.classList.remove('hidden');
-        if(mobileLogoutLink) mobileLogoutLink.classList.remove('hidden');
+  const navBack = document.getElementById('nav-back');
+  const mobileNavBack = document.getElementById('mobile-nav-back');
+  if(navBack) navBack.addEventListener('click', e=>{ e.preventDefault(); window.location.href='index.html'; });
+  if(mobileNavBack) mobileNavBack.addEventListener('click', e=>{ e.preventDefault(); closeMobileMenuIfOpen(); window.location.href='index.html'; });
 
-        try {
-          const utentiRef = collection(db, "utenti");
-          const q = query(utentiRef, where("userId", "==", user.uid));
-          const snap = await getDocs(q);
-          const isAdmin = !snap.empty && snap.docs[0].data().role === "admin";
+  const closeAuthBtn = document.getElementById('closeAuthModalBtn');
+  if(closeAuthBtn) closeAuthBtn.addEventListener('click', e=>{ e.preventDefault(); authModal.classList.remove('show'); });
 
-          if (isAdmin) {
-            if (adminLink) adminLink.classList.remove('hidden');
-            if (adminBadge) adminBadge.classList.remove('hidden');
-            if (mobileAdminLink) mobileAdminLink.classList.remove('hidden');
-            if (mobileAdminBadge) mobileAdminBadge.classList.remove('hidden');
-          } else {
-            if (adminLink) adminLink.classList.add('hidden');
-            if (adminBadge) adminBadge.classList.add('hidden');
-            if (mobileAdminLink) mobileAdminLink.classList.add('hidden');
-            if (mobileAdminBadge) mobileAdminBadge.classList.add('hidden');
+  const menuBtn = document.getElementById('menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const mobileOverlay = document.getElementById('mobile-overlay');
+
+  function openMobileMenu(){
+    mobileMenu.classList.add('show');
+    mobileOverlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeMobileMenu(){
+    mobileMenu.classList.remove('show');
+    mobileOverlay.classList.remove('show');
+    document.body.style.overflow = 'auto';
+  }
+  function closeMobileMenuIfOpen(){ if(mobileMenu.classList.contains('show')) closeMobileMenu(); }
+
+  if(menuBtn){
+    menuBtn.addEventListener('click', ()=> {
+      if(mobileMenu.classList.contains('show')) closeMobileMenu(); else openMobileMenu();
+    });
+  }
+  if(mobileOverlay){
+    mobileOverlay.addEventListener('click', ()=> closeMobileMenu());
+  }
+
+  mobileMenu.querySelectorAll('a').forEach(el => {
+    el.addEventListener('click', ()=> setTimeout(()=> closeMobileMenu(), 60));
+  });
+
+  window.closeMobileMenuIfOpen = closeMobileMenuIfOpen;
+});
+
+
+onAuthStateChanged(auth, async user => {
+  if (ignoreAuthChange) return;
+
+  const logoutLink = document.getElementById('logout-link');
+  const loginBox = document.getElementById('login-box');
+  const registerBox = document.getElementById('register-box');
+  const userBookingsBox = document.getElementById('user-bookings');
+  const calcBar = document.getElementById('calc-bar');
+  const calendarContainer = document.getElementById('calendar-container');
+  const statusText = document.getElementById('status-text');
+  const mainTitle = document.getElementById('main-title');
+  const adminLink = document.getElementById('admin-link');
+  const adminBadge = document.getElementById('admin-badge');
+  const navDirections = document.getElementById('nav-directions');
+  const authLink = document.getElementById('auth-link');
+
+  const mobileAuthLink = document.getElementById('mobile-auth-link');
+  const mobileNavDirections = document.getElementById('mobile-nav-directions');
+  const mobileLogoutLink = document.getElementById('mobile-logout-link');
+  const mobileAdminLink = document.getElementById('mobile-admin-link');
+  const mobileAdminBadge = document.getElementById('mobile-admin-badge');
+
+  if (typeof unsubscribeBookings === 'function') unsubscribeBookings();
+
+  // 🔥 SNAPSHOT UNICO: SEMPRE ATTIVO (loggato o no)
+  // Questo listener è all'interno di authStateChanged così possiamo sapere chi è l'user attuale
+  // per colorare le sue prenotazioni di verde (userBookedDates)
+  unsubscribeBookings = onSnapshot(collectionRef, snapshot => {
+    bookedDates = [];
+    userBookedDates.clear();
+    const userBookings = [];
+
+    snapshot.docs.forEach(docSnap => {
+      const data = docSnap.data();
+      try {
+        let start = new Date(data.data_inizio);
+        let end = new Date(data.data_fine);
+
+        while (start <= end) {
+          const ds = start.toISOString().split('T')[0];
+
+          // 🔴 prenotato per TUTTI
+          bookedDates.push(ds);
+
+          // 🟢 prenotato dall’utente loggato
+          if (user && data.userId === user.uid) {
+            userBookedDates.add(ds);
           }
-        } catch (e) {
-          console.warn(e);
+
+          start.setDate(start.getDate() + 1);
         }
+      } catch (e) {
+        console.warn('Booking parse error', e);
+      }
 
-        if(navDirections) navDirections.classList.remove('hidden');
-        if(mobileNavDirections) mobileNavDirections.classList.remove('hidden');
+      if (user && data.userId === user.uid) {
+        userBookings.push({
+          id: docSnap.id,
+          start: data.data_inizio,
+          end: data.data_fine
+        });
+      }
+    });
 
+    renderAllCalendars();
+    updateUI();
+
+    if (user && userBookings.length > 0) {
+      renderUserBookings(userBookings);
+      if (navDirections) navDirections.classList.remove('hidden');
+      if (mobileNavDirections) mobileNavDirections.classList.remove('hidden');
+    } else {
+      if (userBookingsBox) userBookingsBox.classList.add('hidden');
+      if (navDirections) navDirections.classList.add('hidden');
+      if (mobileNavDirections) mobileNavDirections.classList.add('hidden');
+    }
+  });
+
+  // ───────────── UI LOGIN / LOGOUT ─────────────
+
+  if (user) {
+    if (authLink) authLink.textContent = user.displayName ? user.displayName.split(' ')[0] : user.email;
+    if (mobileAuthLink) mobileAuthLink.textContent = authLink.textContent;
+
+    if (loginBox) loginBox.classList.add('hidden');
+    if (registerBox) registerBox.classList.add('hidden');
+    if (logoutLink) logoutLink.classList.remove('hidden');
+    if (mobileLogoutLink) mobileLogoutLink.classList.remove('hidden');
+    if (calendarContainer) calendarContainer.classList.remove('hidden');
+
+    const firstName = user.displayName ? user.displayName.split(' ')[0] : '';
+    if (mainTitle) mainTitle.textContent = `${translations[currentLang]["welcome"]} ${firstName}`;
+    if (statusText) statusText.textContent = translations[currentLang]["status-logged"];
+
+    try {
+      const utentiRef = collection(db, "utenti");
+      const q = query(utentiRef, where("userId", "==", user.uid));
+      const snap = await getDocs(q);
+      const isAdmin = !snap.empty && snap.docs[0].data().role === "admin";
+
+      if (isAdmin) {
+        if (adminLink) adminLink.classList.remove('hidden');
+        if (adminBadge) adminBadge.classList.remove('hidden');
+        if (mobileAdminLink) mobileAdminLink.classList.remove('hidden');
+        if (mobileAdminBadge) mobileAdminBadge.classList.remove('hidden');
       } else {
-        const lang = document.documentElement.lang || 'it';
-        if(authLink) authLink.textContent = translations[lang]["auth-login"];
-        if(mobileAuthLink) mobileAuthLink.textContent = translations[lang]["auth-login"];
-        
-        if(logoutLink) logoutLink.classList.add('hidden');
-        if(mobileLogoutLink) mobileLogoutLink.classList.add('hidden');
-        
         if (adminLink) adminLink.classList.add('hidden');
         if (adminBadge) adminBadge.classList.add('hidden');
         if (mobileAdminLink) mobileAdminLink.classList.add('hidden');
         if (mobileAdminBadge) mobileAdminBadge.classList.add('hidden');
-        
-        if(navDirections) navDirections.classList.add('hidden');
-        if(mobileNavDirections) mobileNavDirections.classList.add('hidden');
       }
-    });
-
-    const translations = {
-      it: {
-        "nav-location": "Lido delle Nazioni",
-        "nav-home-desktop": "Home",
-        "nav-home-mobile": "Home",
-        "nav-book": "Prenota",
-        "auth-login": "Accedi",
-        "nav-logout": "Esci",
-        "nav-directions": "Indicazioni",
-        "hero-title": "Galleria Casa Gianna",
-        "hero-subtitle": "Scopri ogni angolo della tua prossima casa vacanze",
-        "hero-photos": "Dettagli Cristallini",
-        "hero-rooms": "Un Tour Completo",
-        "gallery-title": "Esplora Casa Gianna",
-        "gallery-subtitle": "Ogni foto racconta la storia del tuo perfetto soggiorno al mare",
-        "features-title": "Caratteristiche Uniche",
-        "features-subtitle": "Dettagli che fanno la differenza",
-        "feature-beach-title": "Vicino al Mare",
-        "feature-beach-desc": "200 metri dalla spiaggia di Lido delle Nazioni",
-        "feature-garden-title": "Giardino Privato",
-        "feature-garden-desc": "Spazi verdi per relax e privacy",
-        "feature-rooms-title": "Camere Confortevoli",
-        "feature-rooms-desc": "Arredamento curato e spazi luminosi",
-        "feature-kitchen-title": "Cucina Completa",
-        "feature-kitchen-desc": "Elettrodomestici moderni e funzionali",
-        "contact-title": "Ti Piace Quello Che Vedi?",
-        "contact-subtitle": "Prenota ora la tua vacanza da sogno",
-        "contact-whatsapp": "WhatsApp",
-        "contact-whatsapp-desc": "Risposta immediata",
-        "contact-whatsapp-action": "Chatta con noi",
-        "contact-email": "Email",
-        "contact-email-desc": "Richiesta dettagliata",
-        "contact-email-action": "Scrivi una mail",
-        "contact-location": "Posizione",
-        "contact-location-desc": "Visualizza su Maps",
-        "contact-location-action": "Apri Maps",
-        "footer-location": "Lido delle Nazioni, Comacchio (FE), Italia",
-        "footer-rights": "Tutti i diritti riservati",
-        "contact-card-title": "Contatti di Gianna",
-        "contact-person-name": "Gianna Santececca",
-        "contact-person-phone": "Telefono:",
-        "contact-person-whatsapp": "WhatsApp:",
-        "contact-person-email": "E-mail:",
-        "login-title": "Area Privata",
-        "btn-login": "Accedi",
-        "login-no-account": "Non hai un account?",
-        "link-register": "Registrati",
-        "register-title": "Registrazione",
-        "btn-register": "Registrati",
-        "register-already": "Hai già un account?",
-        "link-login": "Accedi",
-        "gallery-img-1": "Esterno Casa Gianna",
-        "gallery-img-2": "Ingresso principale",
-        "gallery-img-3": "Camera da letto con libreria",
-        "gallery-img-4": "Soggiorno luminoso",
-        "gallery-img-5": "Zona relax",
-        "gallery-img-6": "Parcheggio privato",
-        "gallery-img-7": "Zona pranzo e cucina",
-        "gallery-img-8": "Seconda camera da letto",
-        "gallery-img-9": "Giardino posteriore",
-        "gallery-img-10": "Doccia all'aperto",
-        "gallery-img-11": "Patio posteriore",
-        "gallery-img-12": "Distanza dal mare"
-      },
-      en: {
-        "nav-location": "Lido delle Nazioni",
-        "nav-home-desktop": "Home",
-        "nav-home-mobile": "Home",
-        "nav-book": "Book",
-        "auth-login": "Login",
-        "nav-logout": "Logout",
-        "nav-directions": "Directions",
-        "hero-title": "Casa Gianna Gallery",
-        "hero-subtitle": "Discover every corner of your next holiday home",
-        "hero-photos": "Crystal-Clear Details",
-        "hero-rooms": "A Complete Tour",
-        "gallery-title": "Explore Casa Gianna",
-        "gallery-subtitle": "Every photo tells the story of your perfect seaside stay",
-        "features-title": "Unique Features",
-        "features-subtitle": "Details that make the difference",
-        "feature-beach-title": "Near the Sea",
-        "feature-beach-desc": "200 meters from Lido delle Nazioni beach",
-        "feature-garden-title": "Private Garden",
-        "feature-garden-desc": "Green spaces for relaxation and privacy",
-        "feature-rooms-title": "Comfortable Rooms",
-        "feature-rooms-desc": "Carefully furnished and bright spaces",
-        "feature-kitchen-title": "Complete Kitchen",
-        "feature-kitchen-desc": "Modern and functional appliances",
-        "contact-title": "Like What You See?",
-        "contact-subtitle": "Book your dream vacation now",
-        "contact-whatsapp": "WhatsApp",
-        "contact-whatsapp-desc": "Immediate response",
-        "contact-whatsapp-action": "Chat with us",
-        "contact-email": "Email",
-        "contact-email-desc": "Detailed request",
-        "contact-email-action": "Write an email",
-        "contact-location": "Location",
-        "contact-location-desc": "View on Maps",
-        "contact-location-action": "Open Maps",
-        "footer-location": "Lido delle Nazioni, Comacchio (FE), Italy",
-        "footer-rights": "All rights reserved",
-        "contact-card-title": "Gianna's Contacts",
-        "contact-person-name": "Gianna Santececca",
-        "contact-person-phone": "Phone:",
-        "contact-person-whatsapp": "WhatsApp:",
-        "contact-person-email": "Email:",
-        "login-title": "Private Area",
-        "btn-login": "Login",
-        "login-no-account": "Don't have an account?",
-        "link-register": "Register",
-        "register-title": "Registration",
-        "btn-register": "Register",
-        "register-already": "Already have an account?",
-        "link-login": "Login",
-        "gallery-img-1": "Casa Gianna Exterior",
-        "gallery-img-2": "Main Entrance",
-        "gallery-img-3": "Bedroom with Bookshelf",
-        "gallery-img-4": "Bright Living Room",
-        "gallery-img-5": "Relaxation Area",
-        "gallery-img-6": "Private Parking",
-        "gallery-img-7": "Dining and Kitchen Area",
-        "gallery-img-8": "Second Bedroom",
-        "gallery-img-9": "Backyard Garden",
-        "gallery-img-10": "Outdoor Shower",
-        "gallery-img-11": "Back Patio",
-        "gallery-img-12": "Distance from the Sea"
-      },
-      de: {
-        "nav-location": "Lido delle Nazioni",
-        "nav-home-desktop": "Startseite",
-        "nav-home-mobile": "Startseite",
-        "nav-book": "Buchen",
-        "auth-login": "Einloggen",
-        "nav-logout": "Abmelden",
-        "nav-directions": "Wegbeschreibung",
-        "hero-title": "Casa Gianna Galerie",
-        "hero-subtitle": "Entdecken Sie jede Ecke Ihres nächsten Ferienhauses",
-        "hero-photos": "Kristallklare Details",
-        "hero-rooms": "Eine Komplette Tour",
-        "gallery-title": "Erkunden Sie Casa Gianna",
-        "gallery-subtitle": "Jedes Foto erzählt die Geschichte Ihres perfekten Aufenthalts am Meer",
-        "features-title": "Einzigartige Merkmale",
-        "features-subtitle": "Details, die den Unterschied machen",
-        "feature-beach-title": "Nahe dem Meer",
-        "feature-beach-desc": "200 Meter vom Strand Lido delle Nazioni entfernt",
-        "feature-garden-title": "Privater Garten",
-        "feature-garden-desc": "Grünflächen für Entspannung und Privatsphäre",
-        "feature-rooms-title": "Komfortable Zimmer",
-        "feature-rooms-desc": "Sorgfältig eingerichtete und helle Räume",
-        "feature-kitchen-title": "Vollständige Küche",
-        "feature-kitchen-desc": "Moderne und funktionale Geräte",
-        "contact-title": "Gefällt Ihnen was Sie sehen?",
-        "contact-subtitle": "Buchen Sie jetzt Ihren Traumurlaub",
-        "contact-whatsapp": "WhatsApp",
-        "contact-whatsapp-desc": "Sofortige Antwort",
-        "contact-whatsapp-action": "Chatten Sie mit uns",
-        "contact-email": "E-Mail",
-        "contact-email-desc": "Detaillierte Anfrage",
-        "contact-email-action": "E-Mail schreiben",
-        "contact-location": "Standort",
-        "contact-location-desc": "Auf Maps anzeigen",
-        "contact-location-action": "Maps öffnen",
-        "footer-location": "Lido delle Nazioni, Comacchio (FE), Italien",
-        "footer-rights": "Alle Rechte vorbehalten",
-        "contact-card-title": "Giannas Kontakte",
-        "contact-person-name": "Gianna Santececca",
-        "contact-person-phone": "Telefono:",
-        "contact-person-whatsapp": "WhatsApp:",
-        "contact-person-email": "E-Mail:",
-        "login-title": "Privater Bereich",
-        "btn-login": "Einloggen",
-        "login-no-account": "Noch kein Konto?",
-        "link-register": "Registrieren",
-        "register-title": "Registrierung",
-        "btn-register": "Registrieren",
-        "register-already": "Schon ein Konto?",
-        "link-login": "Einloggen",
-        "gallery-img-1": "Außenansicht Casa Gianna",
-        "gallery-img-2": "Haupteingang",
-        "gallery-img-3": "Schlafzimmer mit Bücherregal",
-        "gallery-img-4": "Helles Wohnzimmer",
-        "gallery-img-5": "Entspannungsbereich",
-        "gallery-img-6": "Privatparkplatz",
-        "gallery-img-7": "Ess- und Küchenbereich",
-        "gallery-img-8": "Zweites Schlafzimmer",
-        "gallery-img-9": "Hinterer Garten",
-        "gallery-img-10": "Außendusche",
-        "gallery-img-11": "Hintere Terrasse",
-        "gallery-img-12": "Entfernung zum Meer"
-      }
-    };
-
-    function setLanguage(lang) {
-      document.documentElement.lang = lang;
-      document.querySelectorAll('[data-key]').forEach(element => {
-        const key = element.dataset.key;
-        if (translations[lang] && translations[lang][key]) {
-          if (element.tagName === 'INPUT') {
-            element.placeholder = translations[lang][key];
-          } else {
-            element.textContent = translations[lang][key];
-          }
-        }
-      });
-      
-      const user = auth.currentUser;
-      if (!user) {
-         if(authLink) authLink.textContent = translations[lang]["auth-login"];
-         if(mobileAuthLink) mobileAuthLink.textContent = translations[lang]["auth-login"];
-      } else {
-         const firstName = user.displayName ? user.displayName.split(' ')[0] : user.email;
-         if(authLink) authLink.textContent = firstName;
-         if(mobileAuthLink) mobileAuthLink.textContent = firstName;
-      }
-      
-      if (contactModal.classList.contains('show')) {
-          document.querySelector('#contactModal [data-key="contact-person-name"]').textContent = translations[lang]["contact-person-name"];
-      }
-      createGalleryItems();
-      
-      const s1 = document.getElementById('language-select');
-      const s2 = document.getElementById('mobile-language-select');
-      if(s1) s1.value = lang;
-      if(s2) s2.value = lang;
-      
-      localStorage.setItem('selectedLanguage', lang);
+    } catch (e) {
+      console.warn(e);
     }
 
-    function createGalleryItems() {
-      gallery.innerHTML = '';
-      const currentLang = document.documentElement.lang;
-      
-      galleryImages.forEach((image, index) => {
-        const galleryItem = document.createElement('div');
-        galleryItem.className = 'gallery-item stagger-animation';
-        galleryItem.style.animationDelay = `${index * 0.1}s`;
-        const translatedAlt = translations[currentLang][image.key] || image.key;
-        
-        galleryItem.innerHTML = `
-          <img src="${image.src}" alt="${translatedAlt}" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/000000?text=Immagine+non+trovata';">
-          <div class="gallery-overlay" data-index="${index}">
-            <div class="text-white text-center">
-              <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-              <span class="text-lg font-semibold">${translatedAlt}</span>
-            </div>
-          </div>
-        `;
-        gallery.appendChild(galleryItem);
-      });
+  } else {
+    // 👤 NON LOGGATO
+    if (loginBox) loginBox.classList.remove('hidden');
+    if (registerBox) registerBox.classList.add('hidden');
+    if (logoutLink) logoutLink.classList.add('hidden');
+    if (mobileLogoutLink) mobileLogoutLink.classList.add('hidden');
 
-      document.querySelectorAll('.gallery-overlay').forEach(overlay => {
-        overlay.addEventListener('click', (e) => {
-          currentIndex = parseInt(e.currentTarget.dataset.index);
-          openLightbox(currentIndex);
-        });
-      });
-    }
+    if (authLink) authLink.textContent = translations[currentLang]["auth-login"];
+    if (mobileAuthLink) mobileAuthLink.textContent = translations[currentLang]["auth-login"];
 
-    function openLightbox(index) {
-      const currentLang = document.documentElement.lang;
-      const translatedAlt = translations[currentLang][galleryImages[index].key] || galleryImages[index].key;
+    if (mainTitle) mainTitle.textContent = translations[currentLang]["calendar-title"];
+    if (statusText) statusText.textContent = translations[currentLang]["calendar-subtitle"];
 
-      lightboxImg.src = galleryImages[index].src;
-      lightboxImg.alt = translatedAlt;
-      lightbox.classList.add('show');
-      document.body.classList.add('no-scroll');
-      currentZoom = 1;
-      lightboxImg.style.transform = `scale(${currentZoom})`;
-      lightboxImg.addEventListener('wheel', handleImageZoom, { passive: false });
-    }
+    if (calcBar) calcBar.classList.add('hidden');
+    if (userBookingsBox) userBookingsBox.classList.add('hidden');
 
-    function closeLightbox() {
-      lightbox.classList.remove('show');
-      lightboxImg.src = "";
-      lightboxImg.alt = "";
-      document.body.classList.remove('no-scroll');
-      lightboxImg.removeEventListener('wheel', handleImageZoom);
-    }
+    if (adminLink) adminLink.classList.add('hidden');
+    if (adminBadge) adminBadge.classList.add('hidden');
+    if (mobileAdminLink) mobileAdminLink.classList.add('hidden');
+    if (mobileAdminBadge) mobileAdminBadge.classList.add('hidden');
 
-    function handleImageZoom(e) {
-      e.preventDefault();
-      const delta = Math.sign(e.deltaY);
-      if (delta === -1) currentZoom += zoomStep; else currentZoom -= zoomStep;
-      currentZoom = Math.max(0.5, Math.min(currentZoom, 3));
-      lightboxImg.style.transform = `scale(${currentZoom})`;
-      if (currentZoom > 1) lightboxContent.style.overflow = 'auto'; else lightboxContent.style.overflow = 'hidden';
-    }
+    userBookedDates.clear();
+    checkIn = null;
+    checkOut = null;
 
-    function showNextImage() {
-      currentIndex = (currentIndex + 1) % galleryImages.length;
-      openLightbox(currentIndex);
-    }
-
-    function showPrevImage() {
-      currentIndex = (currentIndex - 1 + galleryImages.length) % galleryImages.length;
-      openLightbox(currentIndex);
-    }
-
-    closeBtn.addEventListener('click', closeLightbox);
-    nextBtn.addEventListener('click', showNextImage);
-    prevBtn.addEventListener('click', showPrevImage);
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        if (lightbox.classList.contains('show')) closeLightbox();
-        if (contactModal.classList.contains('show')) closeContactModal();
-        if (authModal.classList.contains('show')) closeAuthModal();
-      }
-      if (e.key === 'ArrowRight' && lightbox.classList.contains('show')) showNextImage();
-      if (e.key === 'ArrowLeft' && lightbox.classList.contains('show')) showPrevImage();
-    });
-
-    const languageSelect = document.getElementById('language-select');
-    const mobileLanguageSelect = document.getElementById('mobile-language-select');
-
-    languageSelect.addEventListener('change', (e) => setLanguage(e.target.value));
-    mobileLanguageSelect.addEventListener('change', (e) => setLanguage(e.target.value));
-
-    const savedLang = localStorage.getItem('selectedLanguage') || 'it';
-    setLanguage(savedLang);
-    document.getElementById('current-year').textContent = new Date().getFullYear();
-  </script>
+    renderAllCalendars();
+    updateUI();
+  }
+});
+</script>
 </body>
 </html>
