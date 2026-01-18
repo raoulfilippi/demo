@@ -491,15 +491,8 @@
         "home-link": "Home",
         "private-page-title": "Private Area - Casa Vacanze Gianna",
         "private-hero-title": "Private Area",
-        "private-hero-subtitle": "Exclusive content and instructions for our guests",<invoke name="artifacts">
-<parameter name="command">update</parameter>
-<parameter name="id">private_header_fix</parameter>
-<parameter name="old_str">        "content-title": "Your Exclusive Resources",
-        "content-subtitle": "Useful videos and data registration form.",
-        "video-ita-title": "How to Reach Us",
-        "video-eng-title": "Video: Instructions (English)",
-        "video-key-title": "Key Usage",</parameter>
-<parameter name="new_str">        "content-title": "Your Exclusive Resources",
+        "private-hero-subtitle": "Exclusive content and instructions for our guests",
+        "content-title": "Your Exclusive Resources",
         "content-subtitle": "Useful videos and data registration form.",
         "video-ita-title": "How to Reach Us",
         "video-eng-title": "Video: Instructions (English)",
@@ -533,125 +526,121 @@
         "footer-rights": "Alle Rechte vorbehalten",
         "contact-card-title": "Giannas Kontakte",
         "contact-person-name": "Gianna Santececca",
-        "contact-person-phone": "Telefono:",
+        "contact-person-phone": "Telefon:",
         "contact-person-whatsapp": "WhatsApp:",
         "contact-person-email": "E-Mail:"
       }
     };
 
+    // Function to set the language
+    function setLanguage(lang) {
+      document.querySelectorAll('[data-key]').forEach(element => {
+        const key = element.getAttribute('data-key');
+        if (translations[lang] && translations[lang][key]) {
+          element.textContent = translations[lang][key];
+        }
+      });
+      
+      // Update the lang attribute of the html tag
+      document.documentElement.lang = lang;
 
-// Function to set the language
-function setLanguage(lang) {
-  document.querySelectorAll('[data-key]').forEach(element => {
-    const key = element.getAttribute('data-key');
-    if (translations[lang] && translations[lang][key]) {
-      element.textContent = translations[lang][key];
+      // Aggiorna anche il nome della persona di contatto nel modale quando la lingua cambia
+      if (contactModal.classList.contains('show')) { // Solo se il modale è aperto
+          document.querySelector('#contactModal [data-key="contact-person-name"]').textContent = translations[lang]["contact-person-name"];
+      }
+      // Aggiorna il titolo della pagina
+      document.title = translations[lang]["private-page-title"];
+
+      // Logica per la visualizzazione condizionale dei video
+      if (videoItaContainer && videoEngContainer) {
+        if (lang === 'it') {
+          videoItaContainer.classList.remove('hidden');
+          videoEngContainer.classList.add('hidden');
+        } else {
+          videoItaContainer.classList.add('hidden');
+          videoEngContainer.classList.remove('hidden');
+        }
+      }
     }
-  });
-  
-  // Update the lang attribute of the html tag
-  document.documentElement.lang = lang;
 
-  // Aggiorna anche il nome della persona di contatto nel modale quando la lingua cambia
-  if (contactModal.classList.contains('show')) { // Solo se il modale è aperto
-      document.querySelector('#contactModal [data-key="contact-person-name"]').textContent = translations[lang]["contact-person-name"];
-  }
-  // Aggiorna il titolo della pagina
-  document.title = translations[lang]["private-page-title"];
+    document.addEventListener('DOMContentLoaded', () => {
+      const langSelect = document.getElementById('language-select');
+      const mobileLangSelect = document.getElementById('mobile-language-select');
+      const menuBtn = document.getElementById('menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const mobileOverlay = document.getElementById('mobile-overlay');
 
-  // Logica per la visualizzazione condizionale dei video
-  if (videoItaContainer && videoEngContainer) {
-    if (lang === 'it') {
-      videoItaContainer.classList.remove('hidden');
-      videoEngContainer.classList.add('hidden');
-    } else {
-      videoItaContainer.classList.add('hidden');
-      videoEngContainer.classList.remove('hidden');
-    }
-  }
-}
+      // Recupera la lingua salvata: prima 'selectedLanguage', poi 'lang' (compatibilità)
+      const savedLang = localStorage.getItem('selectedLanguage') || localStorage.getItem('lang') || 'it';
 
-document.addEventListener('DOMContentLoaded', () => {
-  const langSelect = document.getElementById('language-select');
-  const mobileLangSelect = document.getElementById('mobile-language-select');
-  const menuBtn = document.getElementById('menu-btn');
-  const mobileMenu = document.getElementById('mobile-menu');
-  const mobileOverlay = document.getElementById('mobile-overlay');
+      // Imposta la lingua
+      setLanguage(savedLang);
 
-  // Recupera la lingua salvata: prima 'selectedLanguage', poi 'lang' (compatibilità)
-  const savedLang = localStorage.getItem('selectedLanguage') || localStorage.getItem('lang') || 'it';
+      // Sincronizza la select lingua (se presente) e salva la scelta
+      if (langSelect) {
+        langSelect.value = savedLang;
 
-  // Imposta la lingua se esiste la funzione setLanguage
-  if (typeof setLanguage === 'function') {
-    setLanguage(savedLang);
-  }
+        langSelect.addEventListener('change', (e) => {
+          const selected = e.target.value;
+          localStorage.setItem('selectedLanguage', selected);
+          if (mobileLangSelect) mobileLangSelect.value = selected;
+          setLanguage(selected);
+        });
+      }
 
-  // Sincronizza la select lingua (se presente) e salva la scelta
-  if (langSelect) {
-    langSelect.value = savedLang;
+      if (mobileLangSelect) {
+        mobileLangSelect.value = savedLang;
 
-    langSelect.addEventListener('change', (e) => {
-      const selected = e.target.value;
-      localStorage.setItem('selectedLanguage', selected);
-      if (mobileLangSelect) mobileLangSelect.value = selected;
-      if (typeof setLanguage === 'function') setLanguage(selected);
-    });
-  }
+        mobileLangSelect.addEventListener('change', (e) => {
+          const selected = e.target.value;
+          localStorage.setItem('selectedLanguage', selected);
+          if (langSelect) langSelect.value = selected;
+          setLanguage(selected);
+        });
+      }
 
-  if (mobileLangSelect) {
-    mobileLangSelect.value = savedLang;
+      // Imposta l'anno corrente nel footer
+      const yearEl = document.getElementById('current-year');
+      if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-    mobileLangSelect.addEventListener('change', (e) => {
-      const selected = e.target.value;
-      localStorage.setItem('selectedLanguage', selected);
-      if (langSelect) langSelect.value = selected;
-      if (typeof setLanguage === 'function') setLanguage(selected);
-    });
-  }
+      // Menu mobile functionality
+      function openMobileMenu() {
+        if (mobileMenu && mobileOverlay) {
+          mobileMenu.classList.add('show');
+          mobileOverlay.classList.add('show');
+          document.body.style.overflow = 'hidden';
+        }
+      }
 
-  // Imposta l'anno corrente nel footer
-  const yearEl = document.getElementById('current-year');
-  if (yearEl) yearEl.textContent = new Date().getFullYear();
+      function closeMobileMenu() {
+        if (mobileMenu && mobileOverlay) {
+          mobileMenu.classList.remove('show');
+          mobileOverlay.classList.remove('show');
+          document.body.style.overflow = 'auto';
+        }
+      }
 
-  // Menu mobile functionality
-  function openMobileMenu() {
-    if (mobileMenu && mobileOverlay) {
-      mobileMenu.classList.add('show');
-      mobileOverlay.classList.add('show');
-      document.body.style.overflow = 'hidden';
-    }
-  }
+      if (menuBtn) {
+        menuBtn.addEventListener('click', () => {
+          if (mobileMenu && mobileMenu.classList.contains('show')) {
+            closeMobileMenu();
+          } else {
+            openMobileMenu();
+          }
+        });
+      }
 
-  function closeMobileMenu() {
-    if (mobileMenu && mobileOverlay) {
-      mobileMenu.classList.remove('show');
-      mobileOverlay.classList.remove('show');
-      document.body.style.overflow = 'auto';
-    }
-  }
+      if (mobileOverlay) {
+        mobileOverlay.addEventListener('click', () => closeMobileMenu());
+      }
 
-  if (menuBtn) {
-    menuBtn.addEventListener('click', () => {
-      if (mobileMenu && mobileMenu.classList.contains('show')) {
-        closeMobileMenu();
-      } else {
-        openMobileMenu();
+      // Chiude il menu quando si clicca su un link
+      if (mobileMenu) {
+        mobileMenu.querySelectorAll('a').forEach(el => {
+          el.addEventListener('click', () => setTimeout(() => closeMobileMenu(), 60));
+        });
       }
     });
-  }
-
-  if (mobileOverlay) {
-    mobileOverlay.addEventListener('click', () => closeMobileMenu());
-  }
-
-  // Chiude il menu quando si clicca su un link
-  if (mobileMenu) {
-    mobileMenu.querySelectorAll('a').forEach(el => {
-      el.addEventListener('click', () => setTimeout(() => closeMobileMenu(), 60));
-    });
-  }
-});
-
-</script>
+  </script>
 </body>
-</html></parameter>
+</html>
