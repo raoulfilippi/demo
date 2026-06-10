@@ -1,0 +1,2596 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pianificazione Attività Tecniche</title>
+
+<!-- Libreria ExcelJS per la generazione e stilizzazione avanzata dei file Excel (.xlsx) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDocs, collection, deleteDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyCzoPDMjrLwF9j2zWS1oYJskLTGdn39yf0",
+    authDomain:        "preventivi-training.firebaseapp.com",
+    projectId:         "preventivi-training",
+    storageBucket:     "preventivi-training.firebasestorage.app",
+    messagingSenderId: "905399929097",
+    appId:             "1:905399929097:web:73577c3bd0dc4d6460abd8",
+    measurementId:     "G-Q4VW14KDT7"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  window._fb = {
+    async save(id, data) {
+      const colRef = collection(db, "pianificazione_attivita");
+      const docRef = id ? doc(db, "pianificazione_attivita", id) : doc(colRef);
+      const payload = { id: docRef.id, ...data };
+      await setDoc(docRef, payload, { merge: true });
+      return docRef.id;
+    },
+    // Segregazione dei dati lato database basata sull'utente corrente
+    async loadAll(currentUser) {
+      const snap = await getDocs(collection(db, "pianificazione_attivita"));
+      const result = [];
+      snap.forEach(d => {
+        const data = d.data();
+        // L'amministratore 'IMA' carica tutto. Gli altri utenti caricano solo i propri record.
+        if (currentUser === "IMA" || data.created_by === currentUser) {
+          result.push({ id: d.id, ...data });
+        }
+      });
+      return result;
+    },
+    async remove(id) {
+      await deleteDoc(doc(db, "pianificazione_attivita", id));
+    }
+  };
+  window.addEventListener("DOMContentLoaded", () => window._calInit());
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg:     #f0f2f7;
+  --white:  #ffffff;
+  --border: #dde1ea;
+  --text:   #1a1d27;
+  --muted:  #8a90a2;
+  --shadow: 0 2px 12px rgba(0,0,0,.08);
+  --pc:     #3b82f6;
+  --danger: #dc2626;
+  --success:#15803d;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding-bottom:60px; }
+
+/* ── LOGIN PAGE ── */
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: radial-gradient(circle at top right, #3b82f615, transparent), var(--bg);
+}
+.login-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px 32px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+  text-align: center;
+}
+.login-logo { font-size: 2.5rem; margin-bottom: 12px; }
+.login-title { font-size: 1.4rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.login-subtitle { font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; }
+.login-err { background: #fef2f2; color: var(--danger); font-size: 0.8rem; font-weight: 600; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; display: none; text-align: left; border: 1px solid #fca5a5; }
+
+/* Stili comuni Select */
+.select-styled {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: .88rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
+  cursor: pointer;
+}
+.select-styled:focus {
+  border-color: var(--pc);
+}
+
+/* ── TOPBAR & VIEW SWITCHER ── */
+.topbar {
+  background:var(--white);
+  border-bottom:2px solid var(--border);
+  padding:0 20px;
+  position:sticky; top:0; z-index:50;
+  box-shadow:0 2px 16px rgba(0,0,0,.07);
+  display:flex; align-items:center; gap:8px;
+  min-height:54px;
+}
+.tb-logo { font-size:.95rem; font-weight:700; white-space:nowrap; display:flex; align-items:center; gap:8px; flex-shrink:0; }
+
+.year-nav { display:flex; align-items:center; gap:5px; margin-left: 15px; }
+.year-nav button { width:24px; height:24px; border-radius:6px; background:var(--bg); border:1px solid var(--border); cursor:pointer; font-size:.85rem; display:grid; place-items:center; transition:background .12s; }
+.year-nav button:hover { background:#d4d8e4; }
+.year-nav .yr { font-weight:700; font-size:.88rem; min-width:38px; text-align:center; }
+
+.view-switcher {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 2px;
+  border-radius: 8px;
+  margin-left: 15px;
+}
+.view-btn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.view-btn.active {
+  background: var(--white);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.user-badge {
+  margin-left: 20px;
+  padding: 4px 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.user-badge.admin {
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  color: #6b21a8;
+}
+
+.btn-group {
+  display:flex; align-items:stretch;
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
+  flex-shrink:0;
+  height:34px;
+}
+.btn-group-actions { margin-left:auto; }
+
+.btn-action {
+  display:flex; align-items:center; gap:5px;
+  padding:0 12px;
+  font-size:.72rem; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:background .12s, color .12s;
+  white-space:nowrap; border:none; border-right:1px solid var(--border);
+  background:transparent; color:var(--muted);
+}
+.btn-action:last-child { border-right:none; }
+.btn-action:hover     { background:var(--bg); }
+.btn-print            { color:#0369a1; }
+.btn-print:hover      { background:#e0f2fe; }
+.btn-excel            { color:#15803d; font-weight: 700; }
+.btn-excel:hover      { background:#dcfce7; }
+.btn-logout           { color: var(--danger); }
+.btn-logout:hover     { background: #fee2e2; }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin: 20px 24px 0;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: var(--shadow);
+}
+.f-field { display: flex; flex-direction: column; gap: 4px; }
+.f-field label { font-size: .65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.f-field input, .f-field select { padding: 7px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: .8rem; color: var(--text); outline: none; transition: border-color .15s; width: 100%; }
+.f-field input:focus, .f-field select:focus { border-color: var(--pc); }
+.btn-clear-filter { justify-content: flex-end; }
+.btn-clear-filter button { padding: 8px 12px; background: #fee2e2; color: #dc2626; border: none; border-radius: 8px; font-weight: 600; font-size: .8rem; cursor: pointer; transition: opacity .12s; width: 100%; }
+.btn-clear-filter button:hover { opacity: 0.85; }
+
+/* ── SUMMARY BAR ── */
+.summary-bar { display:flex; gap:0; margin:16px 24px; background:var(--white); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; }
+.sum-card { flex:1; min-width:0; display:flex; align-items:center; gap:10px; padding:12px 18px; border-right:1px solid var(--border); transition:background .15s; }
+.sum-card:last-child { border-right:none; }
+.sum-card:hover { background:var(--bg); }
+.sum-icon { width:32px; height:32px; border-radius:8px; display:grid; place-items:center; font-size:1rem; flex-shrink:0; }
+.sum-label { font-size:.68rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; line-height:1; }
+.sum-value { font-size:1.35rem; font-weight:800; line-height:1.15; }
+.sum-sub   { font-size:.65rem; color:var(--muted); margin-top:1px; }
+
+/* ── CALENDAR ── */
+main { padding:0 24px 24px; }
+.cal-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+@media (max-width:1200px) { .cal-grid { grid-template-columns:repeat(3,1fr); } }
+@media (max-width:840px)  { .cal-grid { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:540px)  { .cal-grid { grid-template-columns:1fr; } }
+@media (max-width:700px)  { .summary-bar { flex-wrap:wrap; } .sum-card { flex:1 1 45%; border-right:none; border-bottom:1px solid var(--border); } .sum-card:nth-child(odd) { border-right:1px solid var(--border); } }
+@media (max-width:400px)  { .sum-card { flex:1 1 100%; border-right:none; } }
+
+.month-card { background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
+.month-head { padding:10px 14px 8px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); background:#fafbfd; gap:6px; }
+.month-head h2 { font-size:.9rem; font-weight:700; flex-shrink:0; }
+.dow-row { display:grid; grid-template-columns:repeat(7,1fr); padding:7px 8px 3px; }
+.dow { text-align:center; font-size:.64rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+.dow:nth-child(6),.dow:nth-child(7) { color:#e57373; }
+.days-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:4px 8px 10px; }
+
+.day { min-height:46px; border-radius:9px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:4px; font-size:.84rem; font-weight:500; cursor:pointer; position:relative; transition:filter .1s; user-select:none; border:1px solid var(--border); background:#fff; }
+.day:hover:not(.empty) { filter:brightness(.95); }
+.day.empty { cursor:default; border:none; background:transparent; }
+.day.weekend { background:#fffafA; }
+.day.weekend .day-num { color:#e57373; }
+.day.today { outline:2px solid var(--pc); outline-offset:-2px; font-weight:700; }
+.day .day-num  { font-size:.82rem; line-height:1; margin-bottom:4px; font-weight:600; align-self: flex-start; padding-left:2px;}
+
+.dot-row { display:flex; flex-wrap:wrap; gap:3px; justify-content:center; padding:1px 2px 0; width:100%; }
+
+/* Modifica stile dot per icone testo anziché sfere colorate */
+.dot { font-size:11px; line-height:1; flex-shrink:0; text-shadow:0 1px 2px rgba(0,0,0,.18); display:inline-flex; align-items:center; justify-content:center; }
+
+/* ── DASHBOARD ANALITICA HIERARCHICAL LAYERS ── */
+.breadcrumb-trail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 18px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow);
+  font-size: .84rem;
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+.bc-label { color: var(--muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; margin-right: 6px; }
+.bc-item { color: var(--pc); cursor: pointer; transition: color 0.15s; }
+.bc-item:hover { color: #1d4ed8; text-decoration: underline; }
+.bc-item.current { color: var(--text); cursor: default; }
+.bc-item.current:hover { text-decoration: none; }
+.bc-sep { color: var(--muted); font-weight: normal; }
+
+.dash-3col-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+@media (max-width: 1024px) {
+  .dash-3col-grid { grid-template-columns: 1fr; }
+}
+
+.dash-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  min-height: 380px;
+  transition: all .2s ease-in-out;
+}
+.dash-card.locked {
+  background: #f8fafc;
+  opacity: 0.65;
+  pointer-events: none;
+}
+.dash-card-title {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+.dash-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 2px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.dash-tab-btn {
+  flex: 1;
+  text-align: center;
+  border: none;
+  padding: 6px;
+  font-size: .75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  transition: all .15s;
+}
+.dash-tab-btn.active {
+  background: var(--white);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.dash-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  max-height: 270px;
+  padding-right: 2px;
+}
+.dash-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .1s, border-color .1s;
+}
+.dash-list-item:hover { background: #f1f5f9; border-color: var(--pc); }
+.dash-list-item.selected { border-color: var(--pc); background: #eff6ff; }
+.dash-item-meta { display: flex; justify-content: space-between; font-size: .8rem; font-weight: 700; }
+.dash-item-sub { display: flex; justify-content: space-between; font-size: .7rem; color: var(--muted); }
+
+.dash-progress-bg { height: 4px; width: 100%; background: #e2e8f0; border-radius: 2px; overflow: hidden; margin-top: 4px; }
+.dash-progress-fill { height: 100%; background: var(--pc); border-radius: 2px; }
+
+.locked-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--muted);
+  text-align: center;
+  padding: 20px;
+}
+.locked-panel-icon { font-size: 2.2rem; margin-bottom: 10px; opacity: 0.65; }
+.locked-panel-text { font-size: .82rem; font-weight: 600; line-height: 1.4; }
+
+/* Registro Operativo Log Down */
+.log-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  margin-top: 18px;
+}
+.log-table-container {
+  overflow-x: auto;
+  max-height: 250px;
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  text-align: left;
+}
+.log-table th {
+  background: #f8fafc;
+  color: var(--text);
+  font-weight: 700;
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.log-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  color: #334155;
+  vertical-align: middle;
+}
+.log-table tr:last-child td { border-bottom: none; }
+.log-table tr:nth-child(even) { background: #f8fafc; }
+.badge-table {
+  font-size: .68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #fff;
+}
+
+/* ── MODAL ── */
+.overlay { position:fixed; inset:0; background:rgba(10,14,30,.45); backdrop-filter:blur(6px); display:none; place-items:center; z-index:200; }
+.overlay.open { display:grid; }
+.modal { background:var(--white); border:1px solid var(--border); border-radius:20px; padding:24px; width:min(500px,94vw); box-shadow:0 28px 70px rgba(0,0,0,.18); display:flex; flex-direction:column; max-height:90vh; overflow:hidden; }
+.modal-head { margin-bottom:16px; flex-shrink:0; }
+.modal-head h3 { font-size:1.05rem; font-weight:700; }
+.modal-head p  { font-size:.78rem; color:var(--muted); margin-top:4px; }
+.frow { margin-bottom:12px; }
+.frow label { display:block; font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin-bottom:4px; }
+.frow input, .frow select { width:100%; padding:9px 12px; background:var(--bg); border:1.5px solid var(--border); border-radius:10px; font-family:inherit; font-size:.85rem; color:var(--text); outline:none; transition:border-color .15s; }
+.frow input:focus, .frow select:focus { border-color:var(--pc); }
+.frow .required-lbl { color: var(--danger); font-weight: bold; margin-left: 2px; }
+
+.mbtn { padding:9px 18px; border-radius:10px; border:none; font-family:inherit; font-size:.85rem; font-weight:600; cursor:pointer; transition:opacity .15s,transform .08s; }
+.mbtn:active { transform:scale(.96); }
+.mbtn-primary   { background:var(--pc); color:#fff; }
+.mbtn-secondary { background:var(--bg); color:var(--text); border:1px solid var(--border); }
+.mbtn-danger    { background:#fee2e2; color:#dc2626; }
+.mbtn:hover     { opacity:.85; }
+.mbtn:disabled  { opacity:0.5; cursor:not-allowed; }
+
+#modalListView { display:flex; flex-direction:column; overflow-y:auto; flex:1 1 auto; min-height:0; }
+#modalFormView { overflow-y:auto; flex:1 1 auto; min-height:0; }
+#activityForm { display:flex; flex-direction:column; }
+.modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; flex-shrink:0; flex-wrap:wrap; }
+#activityList { overflow-y:auto; max-height:300px; margin-bottom:12px; padding-right:4px; }
+.list-item-row { display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:10px; margin-bottom:6px; gap:10px; }
+.list-item-info { flex:1; min-width:0; }
+.list-item-actions { display:flex; gap:4px; align-items: center; }
+.action-icon-btn { background:transparent; border:none; cursor:pointer; font-size:.95rem; padding:4px; border-radius:4px; transition:background .12s; }
+.action-icon-btn:hover { background:rgba(0,0,0,0.05); }
+
+/* ── HOURS SELECTOR ── */
+#hoursButtonGroup {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 5px;
+  margin-bottom: 7px;
+}
+.hrs-btn {
+  padding: 8px 4px;
+  border-radius: 9px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  font-family: inherit;
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .13s;
+  text-align: center;
+  line-height: 1;
+}
+.hrs-btn:hover {
+  border-color: var(--pc);
+  color: var(--pc);
+  background: #eff6ff;
+}
+.hrs-btn.selected {
+  background: var(--pc);
+  border-color: var(--pc);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(59,130,246,.35);
+}
+#halfHourToggle:has(input:checked) {
+  background: #eff6ff;
+  border-color: var(--pc);
+  color: #1d4ed8;
+}
+#halfHourToggle:hover {
+  border-color: var(--pc);
+}
+
+/* ── LEGENDA COLORI CALENDARIO ── */
+.legend-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 10px 24px 0;
+  padding: 9px 16px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  align-items: center;
+}
+.legend-label {
+  font-size: .64rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,.18);
+}
+
+/* ── TOOLTIP ATTIVITÀ ── */
+#actTooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity .15s ease, transform .15s ease;
+  max-width: 260px;
+  min-width: 200px;
+}
+#actTooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.tt-card {
+  background: #1e2130;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.3);
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  font-size: .78rem;
+  color: #e2e8f0;
+}
+.tt-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.tt-course-dot {
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.tt-course-name {
+  font-weight: 700;
+  font-size: .82rem;
+  color: #f1f5f9;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tt-hours-badge {
+  background: rgba(255,255,255,.1);
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: .7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+.tt-body {
+  padding: 8px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.tt-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.tt-row-icon {
+  font-size: .72rem;
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+  opacity: .7;
+}
+.tt-row-label {
+  font-size: .63rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  flex-shrink: 0;
+  min-width: 52px;
+}
+.tt-row-value {
+  font-size: .75rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tt-divider {
+  height: 1px;
+  background: rgba(255,255,255,.07);
+  margin: 2px 0;
+}
+.tt-footer {
+  padding: 5px 12px 8px;
+  font-size: .64rem;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── STATUS ── */
+#status { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#1a1d27; color:#fff; border-radius:30px; padding:10px 22px; font-size:.8rem; font-weight:500; pointer-events:none; opacity:0; transition:opacity .25s; z-index:300; white-space:nowrap; }
+#status.show { opacity:1; }
+.load-bar { height:3px; background:var(--pc); position:fixed; top:0; left:0; right:0; z-index:999; display:none; animation:lpulse 1s ease-in-out infinite alternate; }
+.load-bar.on { display:block; }
+@keyframes lpulse { from{opacity:.4} to{opacity:1} }
+
+/* ── ADVANCED EXCEL COLUMN FILTER STYLING ── */
+.th-filter-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+}
+.th-filter-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.th-filter-btn:hover {
+  background: rgba(0,0,0,0.06);
+}
+.filter-dropdown-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+}
+.filter-search-input {
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  outline: none;
+}
+.filter-search-input:focus {
+  border-color: var(--pc);
+}
+.filter-list {
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  user-select: none;
+}
+.filter-item:hover {
+  background: var(--bg);
+}
+.filter-item input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--pc);
+  cursor: pointer;
+}
+.filter-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+.filter-btn-sm {
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+.filter-btn-primary {
+  background: var(--pc);
+  color: #fff;
+}
+.filter-btn-secondary {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+</style>
+</head>
+<body>
+<div class="load-bar" id="loadBar"></div>
+
+<!-- SCHERMATA LOGIN -->
+<div id="loginPage" class="login-container">
+  <div class="login-card">
+    <div class="login-logo">🔒</div>
+    <h2 class="login-title">Pianificazione Attività</h2>
+    <p class="login-subtitle">Seleziona il tuo profilo e inserisci la password</p>
+    
+    <div id="loginError" class="login-err"></div>
+    
+    <form id="loginForm" onsubmit="return false;">
+      <div class="frow" style="text-align: left;">
+        <label>Nome Utente</label>
+        <select id="loginUsername" class="select-styled" style="background: var(--bg);">
+          <option value="timage">timage</option>
+          <option value="tweddle">tweddle</option>
+        </select>
+      </div>
+      <div class="frow" style="text-align: left; margin-bottom: 24px;">
+        <label>Password</label>
+        <input type="password" id="loginPassword" required placeholder="Inserisci password" style="background: var(--bg);">
+      </div>
+      
+      <button type="submit" class="mbtn mbtn-primary" id="btnLoginSubmit" style="width: 100%; padding: 12px; font-size: 0.9rem;">Accedi al Sistema</button>
+    </form>
+  </div>
+</div>
+
+<!-- SCHERMATA PRINCIPALE (CALENDARIO + ANALITICA) -->
+<div id="appContainer" style="display: none;">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-logo">📅 <span>Pianificazione Attività</span></div>
+    
+    <div class="year-nav" id="yearNavContainer">
+      <button id="prevYear">‹</button>
+      <div class="yr" id="yearLabel">2026</div>
+      <button id="nextYear">›</button>
+    </div>
+
+    <!-- Selettore Vista Principale -->
+    <div class="view-switcher" id="viewSwitcherContainer">
+      <button id="btnViewCalendar" class="view-btn active">📅 Calendario</button>
+      <button id="btnViewDashboard" class="view-btn" style="display: none;">📊 Analitica</button>
+    </div>
+
+    <!-- Informazioni Utente Attivo -->
+    <div id="userBadge" class="user-badge">Utente: —</div>
+
+    <div class="btn-group btn-group-actions">
+      <button class="btn-action btn-excel" id="btnExportFiltered">📊 Esporta Excel Filtrati</button>
+      <button class="btn-action btn-print" id="btnExportAll">📁 Esporta Tutto (.xlsx)</button>
+      <button class="btn-action btn-logout" id="btnLogout">🚪 Esci</button>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar" id="filterBar">
+    <div class="f-field"><label>Cliente</label><input type="text" id="filterClient" placeholder="Filtra cliente..."></div>
+    <div class="f-field"><label>Codice Linea</label><input type="text" id="filterLine" placeholder="Filtra linea..."></div>
+    <div class="f-field"><label>Codice Macchina</label><input type="text" id="filterMachine" placeholder="Filtra macchina..."></div>
+    <div class="f-field"><label>Tecnico</label><input type="text" id="filterTechnician" placeholder="Filtra tecnico..."></div>
+    <!-- Filtro Fornitore visibile solo admin -->
+    <div class="f-field" id="filterProviderContainer" style="display: none;">
+      <label>Fornitore</label>
+      <select id="filterProvider">
+        <option value="">Tutti</option>
+        <option value="timage">timage</option>
+        <option value="tweddle">tweddle</option>
+        <option value="IMA">IMA (Interno)</option>
+      </select>
+    </div>
+    <div class="f-field"><label>Corso</label><select id="filterCourse"><option value="">Tutti i corsi</option></select></div>
+    <div class="f-field"><label>Ore Supporto</label><input type="number" id="filterHours" step="0.5" placeholder="Filtra ore..."></div>
+    <div class="f-field btn-clear-filter"><button id="btnClearFilters">Reset Filtri</button></div>
+  </div>
+
+  <!-- SUMMARY BAR / VISTA CALENDARIO -->
+  <main id="viewMainCalendar">
+    <div class="summary-bar" id="summaryBar">
+      <div class="sum-card"><div class="sum-icon" style="background:#dcfce7">📊</div><div><div class="sum-label">Attività Totali</div><div class="sum-value" id="sumActivities">—</div><div class="sum-sub">Record caricati</div></div></div>
+      <div class="sum-card"><div class="sum-icon" style="background:#fef3c7">⏱️</div><div><div class="sum-label">Ore Supporto</div><div class="sum-value" id="sumHours">—</div><div class="sum-sub">Ore complessive</div></div></div>
+      <div class="sum-card"><div class="sum-icon" style="background:#e0f2fe">🏢</div><div><div class="sum-label">Clienti Unici</div><div class="sum-value" id="sumClients">—</div><div class="sum-sub">Aziende distinte</div></div></div>
+      <div class="sum-card"><div class="sum-icon" style="background:#fff7ed">👨‍🔧</div><div><div class="sum-label">Tecnici Attivi</div><div class="sum-value" id="sumTechnicians">—</div><div class="sum-sub">Operatori unici</div></div></div>
+    </div>
+    
+    <div class="legend-bar" id="legendBar"></div>
+
+    <div class="cal-grid" id="calGrid"></div>
+  </main>
+
+  <!-- NUOVA SEZIONE: VISTA ANALITICA -->
+  <main id="viewMainDashboard" style="display: none; padding: 20px 24px;">
+    
+    <div class="breadcrumb-trail" id="breadcrumbTrail">
+      <span class="bc-label">Percorso Drill-down:</span>
+      <span class="bc-item" id="bcL1" onclick="window._dbResetL1()">Tutti i Clienti</span>
+    </div>
+
+    <div class="dash-3col-grid">
+      
+      <!-- LIVELLO 1: CLIENTE -->
+      <div class="dash-card" id="dbCardL1">
+        <div class="dash-card-title">
+          <span>🏢 Livello 1: Cliente</span>
+          <span style="font-size: .75rem; background: var(--bg); padding: 2px 8px; border-radius: 10px;" id="lblCountL1">0</span>
+        </div>
+        <div class="dash-list" id="dbListL1"></div>
+      </div>
+
+      <!-- LIVELLO 2: LINEA / MACCHINA -->
+      <div class="dash-card locked" id="dbCardL2">
+        <div class="dash-card-title">
+          <span>⚡ Livello 2: Linea / Macchina</span>
+          <span style="font-size: .75rem; background: var(--bg); padding: 2px 8px; border-radius: 10px; display: none;" id="lblCountL2">0</span>
+        </div>
+        
+        <div class="dash-tabs" id="dbTabsL2" style="display: none;">
+          <button id="dbTabLine" class="dash-tab-btn active" onclick="window._dbChangeTabL2('line')">Linea</button>
+          <button id="dbTabMachine" class="dash-tab-btn" onclick="window._dbChangeTabL2('machine')">Macchina</button>
+        </div>
+
+        <div class="dash-list" id="dbListL2"></div>
+        <div class="locked-panel" id="dbPlaceholderL2">
+          <div class="locked-panel-icon">🔒</div>
+          <div class="locked-panel-text">Seleziona un Cliente per sbloccare l'analisi di Linee e Macchine.</div>
+        </div>
+      </div>
+
+      <!-- LIVELLO 3: DETTAGLIO OPERATIVO -->
+      <div class="dash-card locked" id="dbCardL3">
+        <div class="dash-card-title">
+          <span>👨‍🔧 Livello 3: Dettaglio Operativo</span>
+          <span style="font-size: .75rem; background: var(--bg); padding: 2px 8px; border-radius: 10px; display: none;" id="lblCountL3">0</span>
+        </div>
+
+        <div class="dash-tabs" id="dbTabsL3" style="display: none;">
+          <button id="dbTabTech" class="dash-tab-btn active" onclick="window._dbChangeTabL3('tech')">Tecnici</button>
+          <button id="dbTabCourse" class="dash-tab-btn" onclick="window._dbChangeTabL3('course')">Corsi/Attività</button>
+        </div>
+
+        <div class="dash-list" id="dbListL3"></div>
+        <div class="locked-panel" id="dbPlaceholderL3">
+          <div class="locked-panel-icon">🔒</div>
+          <div class="locked-panel-text">Seleziona una Linea o Macchina per sbloccare l'analisi dei Tecnici.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SEZIONE DRILL-DOWN LOG RECORD CONTESTUALIZZATI -->
+    <div class="log-card" id="dbCardLog">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+        <span style="font-weight: 700; font-size: 0.92rem;">📋 Registro Attività Contestualizzato</span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button id="btnClearTableFilters" style="display: none; padding: 6px 12px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 8px; font-weight: 600; font-size: .75rem; cursor: pointer; transition: background .15s, opacity .12s;" title="Azzera tutti i filtri applicati alle colonne della tabella">
+            ❌ Reset Filtri Tabella
+          </button>
+          <span style="font-weight: 700; color: var(--pc); font-size: 0.88rem;" id="dbLogAggregatorLabel">0 ore su 0 record</span>
+        </div>
+      </div>
+      <div class="log-table-container">
+        <table class="log-table">
+          <thead>
+            <tr id="dbLogTableHeader">
+              <!-- Rendered dynamically to support custom header column Excel filters -->
+            </tr>
+          </thead>
+          <tbody id="dbLogTableBody">
+            <tr>
+              <td colspan="10" style="text-align: center; color: var(--muted); padding: 30px;">
+                Nessun dato filtrato. Seleziona almeno un cliente sopra per visualizzare il report cronologico.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- AUTOCOMPLETE DATALISTS -->
+<datalist id="suggestCustomer"></datalist>
+<datalist id="suggestLine"></datalist>
+<datalist id="suggestMachine"></datalist>
+<datalist id="suggestTechnician"></datalist>
+
+<!-- POPUP MODAL SYSTEM -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">Data Calendario</h3>
+      <p id="modalSub">Gestione e pianificazione interventi tecnici</p>
+    </div>
+
+    <!-- VIEW 1: LIST VIEW -->
+    <div id="modalListView">
+      <div id="activityList"></div>
+      <div class="modal-actions">
+        <button class="mbtn mbtn-primary" id="btnOpenAddForm" style="width: 100%;">➕ Aggiungi Attività</button>
+        <button class="mbtn mbtn-secondary" id="btnCloseModal">Chiudi</button>
+      </div>
+    </div>
+
+    <!-- VIEW 2: FORM VIEW (ADD / EDIT) -->
+    <div id="modalFormView" style="display: none;">
+      <form id="activityForm" onsubmit="return false;">
+        <div class="frow">
+          <label>Nome Cliente</label>
+          <input type="text" id="formCustomer" list="suggestCustomer" placeholder="Inserisci o seleziona nome cliente">
+        </div>
+        <div class="frow">
+          <label>Codice Linea<span class="required-lbl">*</span></label>
+          <input type="text" id="formLine" required list="suggestLine" placeholder="Es. L_01 (Obbligatorio)">
+        </div>
+        <div class="frow">
+          <label>Codice Macchina</label>
+          <input type="text" id="formMachine" list="suggestMachine" placeholder="Es. MAC_400">
+        </div>
+        <div class="frow">
+          <label>Nome e Cognome Tecnico<span class="required-lbl">*</span></label>
+          <input type="text" id="formTechnician" required list="suggestTechnician" placeholder="Es. Mario Rossi (Obbligatorio)">
+        </div>
+        <div class="frow">
+          <label>Nome e Cognome Intervistatore<span class="required-lbl">*</span></label>
+          <input type="text" id="formInterviewer" required placeholder="Es. Luigi Bianchi (Obbligatorio)">
+        </div>
+        <div class="frow">
+          <label>Nome del Corso</label>
+          <select id="formCourse"></select>
+        </div>
+        <div class="frow">
+          <label>Numero Ore Supporto Tecnico<span class="required-lbl">*</span></label>
+          <div id="hoursButtonGroup">
+            <button type="button" class="hrs-btn" data-val="0">0</button>
+            <button type="button" class="hrs-btn" data-val="1">1</button>
+            <button type="button" class="hrs-btn" data-val="2">2</button>
+            <button type="button" class="hrs-btn" data-val="3">3</button>
+            <button type="button" class="hrs-btn" data-val="4">4</button>
+            <button type="button" class="hrs-btn" data-val="5">5</button>
+            <button type="button" class="hrs-btn" data-val="6">6</button>
+            <button type="button" class="hrs-btn" data-val="7">7</button>
+            <button type="button" class="hrs-btn" data-val="8">8</button>
+          </div>
+          <label id="halfHourToggle" style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; white-space:nowrap; padding:7px 13px; background:var(--bg); border:1.5px solid var(--border); border-radius:10px; font-size:.82rem; font-weight:600; color:var(--muted); transition:all .15s; user-select:none;">
+            <input type="checkbox" id="formHoursHalf" style="width:15px; height:15px; accent-color:var(--pc); cursor:pointer; flex-shrink:0;">
+            <span>+ 30 min</span>
+          </label>
+          <div id="hoursPreview" style="margin-top:7px; font-size:.75rem; font-weight:600; color:var(--pc); display:none;">
+            ⏱ Totale: <span id="hoursPreviewValue"></span>
+          </div>
+          <input type="hidden" id="formHours">
+          <!-- campo di appoggio per reset form nativo -->
+          <input type="hidden" id="formHoursBase" value="">
+        </div>
+        
+        <div id="creatorInfo" style="font-size: 0.72rem; color: var(--muted); margin-bottom: 12px; display: none;"></div>
+        <div id="readonlyWarning" style="font-size: 0.75rem; color: var(--danger); font-weight: 600; margin-bottom: 12px; display: none;">
+          🔒 Sola Lettura: Questo evento è stato creato più di 5 giorni fa e non può essere modificato.
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="mbtn mbtn-danger" id="btnDeleteForm" style="display: none; margin-right: auto;">Elimina</button>
+          <button type="button" class="mbtn mbtn-secondary" id="btnCancelForm">Annulla</button>
+          <button type="button" class="mbtn mbtn-primary" id="btnSaveActivity">Salva Intervento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="status"></div>
+<div id="actTooltip"><div class="tt-card"></div></div>
+
+<script>
+// ── CONFIG INTERFACCIA ──────────────────────────────────────────────────────
+const COURSES = [
+  { id:"Machine Training", color:"#3b82f6" },
+  { id:"Line Production",  color:"#10b981" },
+  { id:"Scada sup",        color:"#8b5cf6" },
+  { id:"Changeover",       color:"#f59e0b" },
+  { id:"Process",          color:"#ec4899" },
+  { id:"Automation",       color:"#06b6d4" },
+  { id:"MG",               color:"#f97316" },
+  { id:"Addon",            color:"#64748b" }
+];
+
+// Mappa rapida corso→colore per il tooltip
+window.COURSES_MAP = Object.fromEntries(COURSES.map(c => [c.id, c]));
+
+const MONTHS = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno",
+                "Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const DAYS   = ["Lu","Ma","Me","Gi","Ve","Sa","Do"];
+
+// ── SISTEMA AUTENTICAZIONE E PERMESSI (BASE64) ──────────────────────────────
+const USERS_DB = {
+  "timage": {
+    encoded: "dGltYWdlMTIz", // "timage123"
+    role: "user"
+  },
+  "tweddle": {
+    encoded: "dHdlZGRsZTEyMw==", // "tweddle123" 
+    role: "user"
+  },
+  "IMA": {
+    encoded: "aW1hNGxpZmU=", // "ima4life" - Password amministratore nascosta
+    role: "admin"
+  }
+};
+
+// ── STATO APPLICAZIONE ──────────────────────────────────────────────────────
+let year = new Date().getFullYear();
+let currentUser = null;
+let allActivities = []; 
+let selectedDate = null;
+let activeEditingId = null; 
+let currentActiveView = "calendar"; 
+
+// ── STATO GERARCHICO DASHBOARD ANALITICA E MODAL BYPASS ──
+let dbSelectedCustomer = null;               
+let dbSelectedLineOrMachineType = "line";      
+let dbSelectedLineOrMachineName = null;      
+let dbSelectedOperationalType = "tech";       
+let dbSelectedOperationalName = null;       
+let isDashboardEdit = false;
+
+// ── STATO FILTRI INTESTAZIONE TABELLA REGISTRO (Excel Style) ──
+window._tableHeaderFilters = {
+  date: [],
+  created_by: [],
+  customerName: [],
+  lineCode: [],
+  machineCode: [],
+  technician: [],
+  interviewerName: [],
+  course: []
+};
+
+// Reset dei filtri intestazione colonna
+window._resetTableHeaderFilters = function() {
+  window._tableHeaderFilters = {
+    date: [],
+    created_by: [],
+    customerName: [],
+    lineCode: [],
+    machineCode: [],
+    technician: [],
+    interviewerName: [],
+    course: []
+  };
+};
+
+// ── UTILS E CONTROLLO PERMESSI EVENTI (LIFECYCLE 5 GIORNI) ───────────────────
+const pad   = n => String(n).padStart(2,'0');
+const toKey = (y,m,d) => `${y}-${pad(m+1)}-${pad(d)}`;
+
+function showStatus(msg, ms=2200) {
+  const el = document.getElementById("status");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), ms);
+}
+
+function setLoading(on) { 
+  document.getElementById("loadBar").classList.toggle("on", on); 
+}
+
+// Funzione di verifica dei permessi di Modifica (5 Giorni)
+function canEditEvent(act) {
+  if (currentUser === "IMA") return true; 
+  const creationDate = act.created_at ? new Date(act.created_at) : new Date(act.date);
+  const now = new Date();
+  const diffTime = Math.abs(now - creationDate);
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  return diffDays <= 5;
+}
+
+// Funzione di verifica dei permessi di Eliminazione
+function canDeleteEvent(act) {
+  return currentUser === "IMA";
+}
+
+// ── AGGIORNAMENTO DATALIST AUTO-SUGGERIMENTI ────────────────────────────────
+function updateAutoSuggestDatalists() {
+  const customers = new Set();
+  const lines = new Set();
+  const machines = new Set();
+  const technicians = new Set();
+
+  allActivities.forEach(act => {
+    if (act.customerName) customers.add(act.customerName);
+    if (act.lineCode) lines.add(act.lineCode);
+    if (act.machineCode) machines.add(act.machineCode);
+    if (act.technician) technicians.add(act.technician);
+  });
+
+  populateDatalist("suggestCustomer", customers);
+  populateDatalist("suggestLine", lines);
+  populateDatalist("suggestMachine", machines);
+  populateDatalist("suggestTechnician", technicians);
+}
+
+function populateDatalist(id, set) {
+  const dl = document.getElementById(id);
+  if (!dl) return;
+  dl.innerHTML = "";
+  Array.from(set).sort().forEach(val => {
+    const opt = document.createElement("option");
+    opt.value = val;
+    dl.appendChild(opt);
+  });
+}
+
+// ── FILTRO DINAMICO RICERCA BARRA SUPERIORE ──────────────────────────────────
+function getFilteredActivities() {
+  const fClient   = document.getElementById("filterClient").value.toLowerCase().trim();
+  const fLine     = document.getElementById("filterLine").value.toLowerCase().trim();
+  const fMachine  = document.getElementById("filterMachine").value.toLowerCase().trim();
+  const fTech     = document.getElementById("filterTechnician").value.toLowerCase().trim();
+  const fProvider = document.getElementById("filterProvider").value;
+  const fCourse   = document.getElementById("filterCourse").value;
+  const fHours    = document.getElementById("filterHours").value;
+
+  return allActivities.filter(act => {
+    if (fClient && (!act.customerName || !act.customerName.toLowerCase().includes(fClient))) return false;
+    if (fLine && (!act.lineCode || !act.lineCode.toLowerCase().includes(fLine))) return false;
+    if (fMachine && (!act.machineCode || !act.machineCode.toLowerCase().includes(fMachine))) return false;
+    if (fTech && (!act.technician || !act.technician.toLowerCase().includes(fTech))) return false;
+    if (fProvider && act.created_by !== fProvider) return false;
+    if (fCourse && act.course !== fCourse) return false;
+    if (fHours && (parseFloat(act.hours) !== parseFloat(fHours))) return false;
+    return true;
+  });
+}
+
+// ── INIZIALIZZAZIONE SESSIONE & ACCESSO ──────────────────────────────────────
+window._calInit = async function() {
+  buildDropdowns();
+  initTooltip();
+  bindEvents();
+  checkSession();
+};
+
+function checkSession() {
+  const savedUser = sessionStorage.getItem("logged_user");
+  if (savedUser && USERS_DB[savedUser]) {
+    loginSuccess(savedUser);
+  } else {
+    document.getElementById("loginPage").style.display = "flex";
+    document.getElementById("appContainer").style.display = "none";
+  }
+}
+
+async function loginSuccess(username) {
+  currentUser = username;
+  sessionStorage.setItem("logged_user", username);
+  
+  const badge = document.getElementById("userBadge");
+  if (username === "IMA") {
+    badge.className = "user-badge admin";
+    badge.textContent = `Amministratore: IMA`;
+    document.getElementById("btnViewDashboard").style.display = "flex";
+    document.getElementById("filterProviderContainer").style.display = "flex"; // Mostra filtro fornitore
+  } else {
+    badge.className = "user-badge";
+    badge.textContent = `Utente: ${username}`;
+    document.getElementById("btnViewDashboard").style.display = "none";
+    document.getElementById("filterProviderContainer").style.display = "none"; // Nascondi filtro fornitore
+    document.getElementById("btnViewCalendar").click(); 
+  }
+
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("appContainer").style.display = "block";
+  
+  await loadData();
+  renderAll();
+}
+
+function buildDropdowns() {
+  const formSel = document.getElementById("formCourse");
+  const filterSel = document.getElementById("filterCourse");
+  
+  COURSES.forEach(c => {
+    const o1 = document.createElement("option"); o1.value = c.id; o1.textContent = c.id;
+    formSel.appendChild(o1);
+    const o2 = document.createElement("option"); o2.value = c.id; o2.textContent = c.id;
+    filterSel.appendChild(o2);
+  });
+}
+
+async function loadData() {
+  setLoading(true);
+  try {
+    allActivities = await window._fb.loadAll(currentUser);
+    updateAutoSuggestDatalists();
+  } catch(e) {
+    console.error("Errore Firebase:", e);
+    showStatus("⚠️ Errore di caricamento dati", 3500);
+    allActivities = [];
+  }
+  setLoading(false);
+}
+
+// ── RENDERING CALENDARIO ─────────────────────────────────────────────────────
+function renderAll() {
+  const grid = document.getElementById("calGrid");
+  grid.innerHTML = "";
+  
+  for (let m = 0; m < 12; m++) {
+    renderMonth(m, grid);
+  }
+  document.getElementById("yearLabel").textContent = year;
+  computeSummary();
+  renderLegend();
+
+  if (currentActiveView === "dashboard" && currentUser === "IMA") {
+    renderDashboardAnalyticsBI();
+  }
+}
+
+function renderLegend() {
+  const lb = document.getElementById("legendBar");
+  if (!lb) return;
+  lb.innerHTML = `<span class="legend-label">Corsi:</span>` +
+    COURSES.map(c => `<span class="legend-item"><span class="legend-dot" style="background:${c.color}"></span>${c.id}</span>`).join("");
+}
+
+function renderMonth(m, container) {
+  const card = document.createElement("div");
+  card.className = "month-card";
+  
+  card.innerHTML = `
+    <div class="month-head"><h2>${MONTHS[m]}</h2></div>
+    <div class="dow-row">${DAYS.map(d => `<div class="dow">${d}</div>`).join("")}</div>
+    <div class="days-grid" id="dg-${m}"></div>`;
+    
+  container.appendChild(card);
+  renderDays(m, document.getElementById(`dg-${m}`));
+}
+
+function renderDays(m, grid) {
+  const today = new Date();
+  const offset = (new Date(year, m, 1).getDay() + 6) % 7;
+  const total = new Date(year, m + 1, 0).getDate();
+  
+  for (let i = 0; i < offset; i++) {
+    const b = document.createElement("div"); b.className = "day empty"; grid.appendChild(b);
+  }
+
+  const filtered = getFilteredActivities();
+
+  for (let d = 1; d <= total; d++) {
+    const key = toKey(year, m, d);
+    const jsDay = new Date(year, m, d).getDay();
+    const isWeekend = jsDay === 0 || jsDay === 6;
+    const isToday = today.getFullYear() === year && today.getMonth() === m && today.getDate() === d;
+    
+    const el = document.createElement("div");
+    el.className = ["day", isWeekend ? "weekend" : "", isToday ? "today" : ""].filter(Boolean).join(" ");
+    el.dataset.key = key;
+    
+    const dayActs = filtered.filter(a => a.date === key);
+    
+    let html = `<span class="day-num">${d}</span>`;
+    if (dayActs.length > 0) {
+      html += `<div class="dot-row">`;
+      dayActs.forEach((act, idx) => {
+        const cfg = COURSES.find(c => c.id === act.course) || { color: "#64748b" };
+        
+        // Assegnazione Icona per Fornitore
+        let iconShape = '●'; // Fallback per admin/altri
+        if (act.created_by === 'timage') iconShape = '▲'; // Fornitore A
+        else if (act.created_by === 'tweddle') iconShape = '■'; // Fornitore B
+
+        html += `<span class="dot" style="color:${cfg.color}" data-actidx="${idx}" data-datekey="${key}">${iconShape}</span>`;
+      });
+      html += `</div>`;
+    }
+    
+    el.innerHTML = html;
+
+    // Wire tooltip su ogni dot
+    const dots = el.querySelectorAll(".dot");
+    dots.forEach((dotEl, idx) => {
+      const act = dayActs[idx];
+      dotEl.addEventListener("mouseenter", () => window._ttShow(act, dotEl));
+      dotEl.addEventListener("mouseleave", () => window._ttHide());
+    });
+
+    el.addEventListener("click", () => openModalList(key));
+    grid.appendChild(el);
+  }
+}
+
+function computeSummary() {
+  const filtered = getFilteredActivities();
+  
+  document.getElementById("sumActivities").textContent = filtered.length;
+  
+  const totalHours = filtered.reduce((sum, act) => sum + (parseFloat(act.hours) || 0), 0);
+  document.getElementById("sumHours").textContent = totalHours;
+  
+  const clients = new Set(filtered.map(act => act.customerName?.trim().toLowerCase()).filter(Boolean));
+  document.getElementById("sumClients").textContent = clients.size;
+  
+  const techs = new Set(filtered.map(act => act.technician?.trim().toLowerCase()).filter(Boolean));
+  document.getElementById("sumTechnicians").textContent = techs.size;
+}
+
+// ── ANALITICA: RENDERING GERARCHICO SEQUENZIALE ──────────────────────────────
+function renderDashboardAnalyticsBI() {
+  const filtered = getFilteredActivities();
+  
+  const l1Aggregations = {};
+  let totalL1Hours = 0;
+  
+  filtered.forEach(act => {
+    const key = act.customerName || "Nessun Cliente Specificato";
+    const hours = parseFloat(act.hours) || 0;
+    totalL1Hours += hours;
+    
+    if (!l1Aggregations[key]) {
+      l1Aggregations[key] = { name: key, hours: 0, count: 0 };
+    }
+    l1Aggregations[key].hours += hours;
+    l1Aggregations[key].count++;
+  });
+  
+  const listL1Items = Object.values(l1Aggregations).sort((a,b) => b.hours - a.hours);
+  document.getElementById("lblCountL1").textContent = listL1Items.length;
+  
+  const containerL1 = document.getElementById("dbListL1");
+  containerL1.innerHTML = "";
+  
+  if (listL1Items.length === 0) {
+    containerL1.innerHTML = `<p style="text-align:center; padding:18px; font-size:.8rem; color:var(--muted)">Nessun cliente corrispondente ai filtri.</p>`;
+  } else {
+    listL1Items.forEach(item => {
+      const share = totalL1Hours > 0 ? (item.hours / totalL1Hours) * 100 : 0;
+      const isSelected = dbSelectedCustomer === item.name;
+      
+      const row = document.createElement("div");
+      row.className = "dash-list-item" + (isSelected ? " selected" : "");
+      row.innerHTML = `
+        <div class="dash-item-meta">
+          <span>🏢 ${item.name}</span>
+          <span>${item.hours.toFixed(1)} ore</span>
+        </div>
+        <div class="dash-item-sub">
+          <span>Pianificazioni: ${item.count}</span>
+          <span>${share.toFixed(1)}%</span>
+        </div>
+        <div class="dash-progress-bg">
+          <div class="dash-progress-fill" style="width: ${share}%"></div>
+        </div>
+      `;
+      row.addEventListener("click", () => {
+        window._dbSelectCustomer(item.name);
+      });
+      containerL1.appendChild(row);
+    });
+  }
+
+  // LIVELLO 2
+  const cardL2 = document.getElementById("dbCardL2");
+  const listL2 = document.getElementById("dbListL2");
+  const phL2 = document.getElementById("dbPlaceholderL2");
+  const tabsL2 = document.getElementById("dbTabsL2");
+  const lblCountL2 = document.getElementById("lblCountL2");
+
+  if (!dbSelectedCustomer) {
+    cardL2.classList.add("locked");
+    listL2.style.display = "none";
+    phL2.style.display = "flex";
+    tabsL2.style.display = "none";
+    lblCountL2.style.display = "none";
+  } else {
+    cardL2.classList.remove("locked");
+    listL2.style.display = "flex";
+    phL2.style.display = "none";
+    tabsL2.style.display = "flex";
+    lblCountL2.style.display = "inline-block";
+    
+    const filteredL2Data = filtered.filter(a => (a.customerName || "Nessun Cliente Specificato") === dbSelectedCustomer);
+    const l2Aggregations = {};
+    let totalL2Hours = 0;
+    
+    filteredL2Data.forEach(act => {
+      const key = (dbSelectedLineOrMachineType === "line" ? act.lineCode : act.machineCode) || "Nessuna Specificata";
+      const hours = parseFloat(act.hours) || 0;
+      totalL2Hours += hours;
+      
+      if (!l2Aggregations[key]) {
+        l2Aggregations[key] = { name: key, hours: 0, count: 0 };
+      }
+      l2Aggregations[key].hours += hours;
+      l2Aggregations[key].count++;
+    });
+    
+    const listL2Items = Object.values(l2Aggregations).sort((a,b) => b.hours - a.hours);
+    lblCountL2.textContent = listL2Items.length;
+    listL2.innerHTML = "";
+    
+    if (listL2Items.length === 0) {
+      listL2.innerHTML = `<p style="text-align:center; padding:18px; font-size:.8rem; color:var(--muted)">Nessuna linea/macchina pianificata.</p>`;
+    } else {
+      listL2Items.forEach(item => {
+        const share = totalL2Hours > 0 ? (item.hours / totalL2Hours) * 100 : 0;
+        const isSelected = dbSelectedLineOrMachineName === item.name;
+        
+        const row = document.createElement("div");
+        row.className = "dash-list-item" + (isSelected ? " selected" : "");
+        row.innerHTML = `
+          <div class="dash-item-meta">
+            <span>${dbSelectedLineOrMachineType === "line" ? "⚡" : "⚙️"} ${item.name}</span>
+            <span>${item.hours.toFixed(1)} ore</span>
+          </div>
+          <div class="dash-item-sub">
+            <span>Interventi: ${item.count}</span>
+            <span>${share.toFixed(1)}%</span>
+          </div>
+          <div class="dash-progress-bg">
+            <div class="dash-progress-fill" style="width: ${share}%; background: #10b981;"></div>
+          </div>
+        `;
+        row.addEventListener("click", () => {
+          window._dbSelectLineOrMachine(item.name);
+        });
+        listL2.appendChild(row);
+      });
+    }
+  }
+
+  // LIVELLO 3
+  const cardL3 = document.getElementById("dbCardL3");
+  const listL3 = document.getElementById("dbListL3");
+  const phL3 = document.getElementById("dbPlaceholderL3");
+  const tabsL3 = document.getElementById("dbTabsL3");
+  const lblCountL3 = document.getElementById("lblCountL3");
+
+  if (!dbSelectedCustomer || !dbSelectedLineOrMachineName) {
+    cardL3.classList.add("locked");
+    listL3.style.display = "none";
+    phL3.style.display = "flex";
+    tabsL3.style.display = "none";
+    lblCountL3.style.display = "none";
+  } else {
+    cardL3.classList.remove("locked");
+    listL3.style.display = "flex";
+    phL3.style.display = "none";
+    tabsL3.style.display = "flex";
+    lblCountL3.style.display = "inline-block";
+    
+    const filteredL3Data = filtered.filter(a => 
+      (a.customerName || "Nessun Cliente Specificato") === dbSelectedCustomer &&
+      (dbSelectedLineOrMachineType === "line" ? a.lineCode : a.machineCode) === dbSelectedLineOrMachineName
+    );
+    
+    const l3Aggregations = {};
+    let totalL3Hours = 0;
+    
+    filteredL3Data.forEach(act => {
+      const key = (dbSelectedOperationalType === "tech" ? act.technician : act.course) || "Nessuno Specificato";
+      const hours = parseFloat(act.hours) || 0;
+      totalL3Hours += hours;
+      
+      if (!l3Aggregations[key]) {
+        l3Aggregations[key] = { name: key, hours: 0, count: 0 };
+      }
+      l3Aggregations[key].hours += hours;
+      l3Aggregations[key].count++;
+    });
+    
+    const listL3Items = Object.values(l3Aggregations).sort((a,b) => b.hours - a.hours);
+    lblCountL3.textContent = listL3Items.length;
+    listL3.innerHTML = "";
+    
+    if (listL3Items.length === 0) {
+      listL3.innerHTML = `<p style="text-align:center; padding:18px; font-size:.8rem; color:var(--muted)">Nessun dettaglio operativo.</p>`;
+    } else {
+      listL3Items.forEach(item => {
+        const share = totalL3Hours > 0 ? (item.hours / totalL3Hours) * 100 : 0;
+        const isSelected = dbSelectedOperationalName === item.name;
+        
+        const row = document.createElement("div");
+        row.className = "dash-list-item" + (isSelected ? " selected" : "");
+        row.innerHTML = `
+          <div class="dash-item-meta">
+            <span>${dbSelectedOperationalType === "tech" ? "👨‍🔧" : "📚"} ${item.name}</span>
+            <span>${item.hours.toFixed(1)} ore</span>
+          </div>
+          <div class="dash-item-sub">
+            <span>Record: ${item.count}</span>
+            <span>${share.toFixed(1)}%</span>
+          </div>
+          <div class="dash-progress-bg">
+            <div class="dash-progress-fill" style="width: ${share}%; background: #8b5cf6;"></div>
+          </div>
+        `;
+        row.addEventListener("click", () => {
+          window._dbSelectOperational(item.name);
+        });
+        listL3.appendChild(row);
+      });
+    }
+  }
+
+  renderDrilldownLogTable(filtered);
+  updateBreadcrumbTrail();
+}
+
+function renderDrilldownLogTable(filtered) {
+  const tableBody = document.getElementById("dbLogTableBody");
+  const aggregatorLabel = document.getElementById("dbLogAggregatorLabel");
+  const tableHeader = document.getElementById("dbLogTableHeader");
+  
+  // Mostra o nascondi il bottone "Reset Filtri Tabella" in base ai filtri attivi
+  const hasActiveTableFilters = Object.values(window._tableHeaderFilters).some(arr => arr.length > 0);
+  const btnClearTable = document.getElementById("btnClearTableFilters");
+  if (btnClearTable) {
+    btnClearTable.style.display = hasActiveTableFilters ? "inline-block" : "none";
+  }
+
+  // Base Dataset prima dei filtri interni d'intestazione
+  let baseLogSet = filtered;
+  if (dbSelectedCustomer) {
+    baseLogSet = baseLogSet.filter(a => (a.customerName || "Nessun Cliente Specificato") === dbSelectedCustomer);
+  }
+  if (dbSelectedLineOrMachineName) {
+    baseLogSet = baseLogSet.filter(a => (dbSelectedLineOrMachineType === "line" ? a.lineCode : a.machineCode) === dbSelectedLineOrMachineName);
+  }
+  if (dbSelectedOperationalName) {
+    baseLogSet = baseLogSet.filter(a => (dbSelectedOperationalType === "tech" ? a.technician : a.course) === dbSelectedOperationalName);
+  }
+
+  // Costruisci colonne dinamicamente con filtri avanzati abilitati
+  const tableColumns = [
+    { label: "Data", key: "date" }
+  ];
+
+  if (currentUser === "IMA") {
+    tableColumns.push({ label: "Fornitore", key: "created_by" });
+  }
+
+  tableColumns.push(
+    { label: "Cliente", key: "customerName" },
+    { label: "Linea", key: "lineCode" },
+    { label: "Macchina", key: "machineCode" },
+    { label: "Tecnico", key: "technician" },
+    { label: "Intervistatore", key: "interviewerName" },
+    { label: "Attività/Corso", key: "course" },
+    { label: "Ore", key: "hours", noFilter: true }
+  );
+
+  if (currentUser === "IMA") {
+    tableColumns.push({ label: "Azioni", key: "actions", noFilter: true });
+  }
+
+  // Disegna l'intestazione con icone filtro ad imbuto
+  tableHeader.innerHTML = "";
+  tableColumns.forEach(col => {
+    const th = document.createElement("th");
+    if (col.noFilter) {
+      th.style.textAlign = col.key === "hours" ? "right" : "center";
+      th.textContent = col.label;
+    } else {
+      const activeFilters = window._tableHeaderFilters[col.key] || [];
+      const isFiltered = activeFilters.length > 0;
+      const iconColor = isFiltered ? "#3b82f6" : "#8a90a2";
+      
+      th.innerHTML = `
+        <div class="th-filter-wrapper">
+          <span>${col.label}</span>
+          <button class="th-filter-btn" data-col="${col.key}" title="Filtra per ${col.label}">
+            <svg style="color: ${iconColor}; width: 12px; height: 12px; fill: currentColor;" viewBox="0 0 20 20">
+              <path d="M12 12l8-8V0H0v4l8 8v8l4-4v-4z"/>
+            </svg>
+          </button>
+        </div>
+      `;
+
+      // Event listener per aprire il dropdown stile Excel
+      const btn = th.querySelector(".th-filter-btn");
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        window._openExcelFilterDropdown(btn, col.key, col.label, baseLogSet);
+      });
+    }
+    tableHeader.appendChild(th);
+  });
+
+  // Applica i filtri d'intestazione se presenti
+  let finalLogSet = [...baseLogSet];
+  Object.keys(window._tableHeaderFilters).forEach(key => {
+    const selectedVals = window._tableHeaderFilters[key];
+    if (selectedVals && selectedVals.length > 0) {
+      finalLogSet = finalLogSet.filter(act => {
+        let actVal = act[key];
+        const valStr = (actVal !== undefined && actVal !== null && String(actVal).trim() !== "") ? String(actVal) : "N/D";
+        return selectedVals.includes(valStr);
+      });
+    }
+  });
+
+  finalLogSet.sort((a,b) => b.date.localeCompare(a.date));
+  
+  const totalHours = finalLogSet.reduce((sum, a) => sum + (parseFloat(a.hours) || 0), 0);
+  aggregatorLabel.textContent = `Totale: ${totalHours.toFixed(1)} ore su ${finalLogSet.length} record`;
+  
+  tableBody.innerHTML = "";
+  if (finalLogSet.length === 0) {
+    const cols = tableColumns.length;
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="${cols}" style="text-align: center; color: var(--muted); padding: 40px; font-weight: 500;">
+          Nessun record corrisponde al livello gerarchico e ai filtri di intestazione impostati.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  finalLogSet.forEach(act => {
+    const cfg = COURSES.find(c => c.id === act.course) || { color: "#64748b" };
+    const row = document.createElement("tr");
+    
+    let tds = `
+      <td style="font-weight: 600;">📅 ${act.date}</td>
+    `;
+
+    if (currentUser === "IMA") {
+      let iconShape = '●';
+      if (act.created_by === 'timage') iconShape = '▲';
+      else if (act.created_by === 'tweddle') iconShape = '■';
+      tds += `<td><span style="font-weight:600; font-size:11px;">${iconShape} ${act.created_by || "-"}</span></td>`;
+    }
+
+    tds += `
+      <td><strong>${act.customerName || "-"}</strong></td>
+      <td><span style="background: #eff6ff; padding: 2px 6px; border-radius: 4px; font-weight:600;">${act.lineCode || "-"}</span></td>
+      <td><span style="color: var(--muted); font-size:11px;">${act.machineCode || "-"}</span></td>
+      <td><strong>👨‍🔧 ${act.technician}</strong></td>
+      <td>${act.interviewerName || "-"}</td>
+      <td><span class="badge-table" style="background: ${cfg.color}">${act.course}</span></td>
+      <td style="text-align: right; font-weight: 700; color: var(--pc);">${act.hours}</td>
+    `;
+
+    if (currentUser === "IMA") {
+      tds += `
+        <td style="text-align: center; white-space: nowrap;">
+          <button class="action-icon-btn" title="Modifica" onclick="window._editActFromDashboard('${act.id}')">✏️</button>
+          <button class="action-icon-btn" title="Elimina" onclick="window._deleteAct('${act.id}')">🗑️</button>
+        </td>
+      `;
+    }
+
+    row.innerHTML = tds;
+    tableBody.appendChild(row);
+  });
+}
+
+window._openExcelFilterDropdown = function(button, colKey, colLabel, baseLogSet) {
+  // Rimuovi eventuale dropdown aperto in precedenza
+  window._closeAllDropdowns();
+
+  // Estrai tutti i valori unici per questa colonna presenti nel set corrente
+  const uniqueVals = [...new Set(baseLogSet.map(act => {
+    let actVal = act[colKey];
+    return (actVal !== undefined && actVal !== null && String(actVal).trim() !== "") ? String(actVal) : "N/D";
+  }))].sort((a,b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}));
+
+  const activeFilters = window._tableHeaderFilters[colKey] || [];
+
+  // Calcolo della posizione per evitare ritagli da scrolling container (montaggio absolute su body)
+  const rect = button.getBoundingClientRect();
+  const dropdown = document.createElement("div");
+  dropdown.id = "tableFilterDropdown";
+  dropdown.className = "filter-dropdown-card";
+  dropdown.style.position = "absolute";
+  dropdown.style.zIndex = "10005";
+  dropdown.style.top = `${rect.bottom + window.scrollY + 6}px`;
+
+  // Allineamento orizzontale intelligente
+  let leftPos = rect.left + window.scrollX;
+  if (leftPos + 220 > window.innerWidth + window.scrollX) {
+    leftPos = window.innerWidth + window.scrollX - 230;
+  }
+  dropdown.style.left = `${leftPos}px`;
+
+  // Previene la chiusura immediata cliccando dentro la scheda
+  dropdown.addEventListener("click", (e) => e.stopPropagation());
+
+  // Genera markup del popover
+  dropdown.innerHTML = `
+    <div style="font-weight: 700; font-size: 0.8rem; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 4px;">
+      Filtro ${colLabel}
+    </div>
+    <input type="text" placeholder="Cerca valore..." class="filter-search-input" id="popoverSearch">
+    
+    <label class="filter-item" style="font-weight: 600; border-bottom: 1px dashed var(--border); padding-bottom: 6px;">
+      <input type="checkbox" id="popoverSelectAll" checked>
+      <span>(Seleziona tutto)</span>
+    </label>
+
+    <div class="filter-list" id="popoverList"></div>
+
+    <div class="filter-actions">
+      <button class="filter-btn-sm filter-btn-secondary" id="popoverCancel">Annulla</button>
+      <button class="filter-btn-sm filter-btn-primary" id="popoverApply">Applica</button>
+    </div>
+  `;
+
+  document.body.appendChild(dropdown);
+
+  const searchInput = dropdown.querySelector("#popoverSearch");
+  const selectAllCb = dropdown.querySelector("#popoverSelectAll");
+  const listContainer = dropdown.querySelector("#popoverList");
+
+  // Popola la lista delle checkbox per ciascun valore univoco
+  uniqueVals.forEach(val => {
+    const isChecked = activeFilters.length === 0 || activeFilters.includes(val);
+    const escapedVal = val.replace(/"/g, '&quot;');
+    const item = document.createElement("label");
+    item.className = "filter-item";
+    item.dataset.val = val;
+    item.innerHTML = `
+      <input type="checkbox" value="${escapedVal}" ${isChecked ? "checked" : ""}>
+      <span title="${escapedVal}">${val}</span>
+    `;
+    listContainer.appendChild(item);
+  });
+
+  // Gestione dinamica dello stato "Seleziona Tutto" basato su checkboxes individuali
+  function updateSelectAllState() {
+    const total = listContainer.querySelectorAll("input[type='checkbox']").length;
+    const checked = listContainer.querySelectorAll("input[type='checkbox']:checked").length;
+    selectAllCb.checked = total === checked;
+    selectAllCb.indeterminate = checked > 0 && checked < total;
+  }
+  updateSelectAllState();
+
+  listContainer.addEventListener("change", updateSelectAllState);
+
+  // Azione "Seleziona tutto" toggle globale
+  selectAllCb.addEventListener("change", () => {
+    const targetState = selectAllCb.checked;
+    listContainer.querySelectorAll("input[type='checkbox']").forEach(cb => {
+      // mostrati solo quelli attualmente visibili (rispetto alla query di ricerca)
+      const isVisible = cb.closest(".filter-item").style.display !== "none";
+      if (isVisible) {
+        cb.checked = targetState;
+      }
+    });
+  });
+
+  // Barra di ricerca interna al popover
+  searchInput.addEventListener("input", () => {
+    const q = searchInput.value.toLowerCase().trim();
+    listContainer.querySelectorAll(".filter-item").forEach(item => {
+      const match = item.dataset.val.toLowerCase().includes(q);
+      item.style.display = match ? "flex" : "none";
+    });
+    updateSelectAllState();
+  });
+
+  // Tasto Applica Filtro
+  dropdown.querySelector("#popoverApply").addEventListener("click", () => {
+    const checkedBoxes = Array.from(listContainer.querySelectorAll("input[type='checkbox']:checked")).map(cb => cb.value);
+    
+    // Se sono stati selezionati tutti i valori, o se la lista è vuota, disabilita il filtro d'intestazione
+    if (checkedBoxes.length === uniqueVals.length || checkedBoxes.length === 0) {
+      window._tableHeaderFilters[colKey] = [];
+    } else {
+      window._tableHeaderFilters[colKey] = checkedBoxes;
+    }
+    
+    // ADEGUAMENTO AUTOMATICO DEL PERCORSO DRILL-DOWN IN BASE ALLE SCELTE FATTE
+    if (colKey === "customerName") {
+      if (checkedBoxes.length === 1) {
+        dbSelectedCustomer = checkedBoxes[0] === "N/D" ? "Nessun Cliente Specificato" : checkedBoxes[0];
+      } else {
+        dbSelectedCustomer = null;
+        dbSelectedLineOrMachineName = null;
+        dbSelectedOperationalName = null;
+      }
+    } else if (colKey === "lineCode" || colKey === "machineCode") {
+      dbSelectedLineOrMachineType = colKey === "lineCode" ? "line" : "machine";
+      if (checkedBoxes.length === 1) {
+        dbSelectedLineOrMachineName = checkedBoxes[0] === "N/D" ? "Nessuna Specificata" : checkedBoxes[0];
+      } else {
+        dbSelectedLineOrMachineName = null;
+        dbSelectedOperationalName = null;
+      }
+    } else if (colKey === "technician" || colKey === "course") {
+      dbSelectedOperationalType = colKey === "technician" ? "tech" : "course";
+      if (checkedBoxes.length === 1) {
+        dbSelectedOperationalName = checkedBoxes[0] === "N/D" ? "Nessuno Specificato" : checkedBoxes[0];
+      } else {
+        dbSelectedOperationalName = null;
+      }
+    }
+    
+    renderDashboardAnalyticsBI();
+    window._closeAllDropdowns();
+  });
+
+  // Tasto Annulla
+  dropdown.querySelector("#popoverCancel").addEventListener("click", window._closeAllDropdowns);
+};
+
+// Funzione globale di chiusura di tutti i popover attivi
+window._closeAllDropdowns = function() {
+  const active = document.getElementById("tableFilterDropdown");
+  if (active) active.remove();
+};
+
+// Registrazione degli eventi di dismiss globale per i menu a tendina
+document.addEventListener("click", (e) => {
+  const dropdown = document.getElementById("tableFilterDropdown");
+  if (dropdown && !dropdown.contains(e.target) && !e.target.closest(".th-filter-btn")) {
+    window._closeAllDropdowns();
+  }
+});
+
+// Chiusura al ridimensionamento o allo scroll della finestra principale
+window.addEventListener("resize", window._closeAllDropdowns);
+window.addEventListener("scroll", window._closeAllDropdowns);
+
+
+function updateBreadcrumbTrail() {
+  const trail = document.getElementById("breadcrumbTrail");
+  trail.innerHTML = `<span class="bc-label">Percorso Drill-down:</span>`;
+  
+  const bcAll = document.createElement("span");
+  bcAll.className = "bc-item" + (!dbSelectedCustomer ? " current" : "");
+  bcAll.textContent = "Tutti i Clienti";
+  if (dbSelectedCustomer) { bcAll.onclick = () => window._dbResetL1(); }
+  trail.appendChild(bcAll);
+  
+  if (dbSelectedCustomer) {
+    trail.appendChild(createSep());
+    const bcCust = document.createElement("span");
+    bcCust.className = "bc-item" + (!dbSelectedLineOrMachineName ? " current" : "");
+    bcCust.textContent = `Cliente: ${dbSelectedCustomer}`;
+    if (dbSelectedLineOrMachineName) { bcCust.onclick = () => window._dbResetL2(); }
+    trail.appendChild(bcCust);
+  }
+  
+  if (dbSelectedLineOrMachineName) {
+    trail.appendChild(createSep());
+    const bcLM = document.createElement("span");
+    bcLM.className = "bc-item" + (!dbSelectedOperationalName ? " current" : "");
+    const typeLabel = dbSelectedLineOrMachineType === "line" ? "Linea" : "Macchina";
+    bcLM.textContent = `${typeLabel}: ${dbSelectedLineOrMachineName}`;
+    if (dbSelectedOperationalName) { bcLM.onclick = () => window._dbResetL3(); }
+    trail.appendChild(bcLM);
+  }
+
+  if (dbSelectedOperationalName) {
+    trail.appendChild(createSep());
+    const bcOp = document.createElement("span");
+    bcOp.className = "bc-item current";
+    const typeLabel = dbSelectedOperationalType === "tech" ? "Tecnico" : "Corso";
+    bcOp.textContent = `${typeLabel}: ${dbSelectedOperationalName}`;
+    trail.appendChild(bcOp);
+  }
+}
+
+function createSep() {
+  const sep = document.createElement("span");
+  sep.className = "bc-sep";
+  sep.textContent = " > ";
+  return sep;
+}
+
+window._dbSelectCustomer = function(customerName) {
+  dbSelectedCustomer = customerName;
+  dbSelectedLineOrMachineName = null;
+  dbSelectedOperationalName = null;
+  renderDashboardAnalyticsBI();
+};
+
+window._dbSelectLineOrMachine = function(name) {
+  dbSelectedLineOrMachineName = name;
+  dbSelectedOperationalName = null;
+  renderDashboardAnalyticsBI();
+};
+
+window._dbSelectOperational = function(name) {
+  dbSelectedOperationalName = name;
+  renderDashboardAnalyticsBI();
+};
+
+window._dbChangeTabL2 = function(type) {
+  dbSelectedLineOrMachineType = type;
+  dbSelectedLineOrMachineName = null;
+  dbSelectedOperationalName = null;
+  
+  document.getElementById("dbTabLine").classList.toggle("active", type === "line");
+  document.getElementById("dbTabMachine").classList.toggle("active", type === "machine");
+  renderDashboardAnalyticsBI();
+};
+
+window._dbChangeTabL3 = function(type) {
+  dbSelectedOperationalType = type;
+  dbSelectedOperationalName = null;
+  
+  document.getElementById("dbTabTech").classList.toggle("active", type === "tech");
+  document.getElementById("dbTabCourse").classList.toggle("active", type === "course");
+  renderDashboardAnalyticsBI();
+};
+
+window._dbResetL1 = function() {
+  dbSelectedCustomer = null;
+  dbSelectedLineOrMachineName = null;
+  dbSelectedOperationalName = null;
+  renderDashboardAnalyticsBI();
+};
+
+window._dbResetL2 = function() {
+  dbSelectedLineOrMachineName = null;
+  dbSelectedOperationalName = null;
+  renderDashboardAnalyticsBI();
+};
+
+window._dbResetL3 = function() {
+  dbSelectedOperationalName = null;
+  renderDashboardAnalyticsBI();
+};
+
+
+// ── LOGICA DI GESTIONE MODAL INTERVENTI E PERMESSI ────────────────────────────
+function openModalList(dateKey) {
+  selectedDate = dateKey;
+  const [y, m, d] = dateKey.split("-");
+  document.getElementById("modalTitle").textContent = `${parseInt(d)} ${MONTHS[parseInt(m)-1]} ${y}`;
+  document.getElementById("modalSub").textContent = "Gestione e pianificazione interventi tecnici";
+  
+  document.getElementById("modalListView").style.display = "block";
+  document.getElementById("modalFormView").style.display = "none";
+  
+  refreshActivityListUI();
+  document.getElementById("overlay").classList.add("open");
+}
+
+function refreshActivityListUI() {
+  const container = document.getElementById("activityList");
+  container.innerHTML = "";
+  
+  const dayActs = allActivities.filter(a => a.date === selectedDate);
+  if (dayActs.length === 0) {
+    container.innerHTML = `<p style="text-align:center; padding:16px; font-size:.85rem; color:var(--muted); font-weight: 500;">Nessuna attività programmata.</p>`;
+    return;
+  }
+  
+  dayActs.forEach(act => {
+    const row = document.createElement("div");
+    row.className = "list-item-row";
+    const cfg = COURSES.find(c => c.id === act.course) || { color: "#64748b" };
+    
+    // Controlli Permessi di visualizzazione Bottoni in UI
+    const canEdit = canEditEvent(act);
+    const canDelete = canDeleteEvent(act);
+    
+    let editBtn = canEdit ? `<button class="action-icon-btn" title="Modifica" onclick="window._editAct('${act.id}')">✏️</button>` : '';
+    let delBtn = canDelete ? `<button class="action-icon-btn" title="Elimina" onclick="window._deleteAct('${act.id}')">🗑️</button>` : '';
+    let lockBadge = (!canEdit && !canDelete) ? `<span style="font-size:10px; font-weight: 700; color:var(--muted); background:#e2e8f0; padding:4px 8px; border-radius:12px;">🔒 Sola Lettura</span>` : '';
+    
+    row.innerHTML = `
+      <div class="list-item-info">
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <span style="font-size:10px; font-weight:700; background:${cfg.color}15; color:${cfg.color}; padding:2px 6px; border-radius:4px;">${act.course}</span>
+          <strong style="font-size:13px;">${act.lineCode}</strong>
+          ${act.machineCode ? `<span style="font-size:11px; color:var(--muted)">(${act.machineCode})</span>` : ""}
+        </div>
+        <div style="font-size:12px; margin-top:2px; font-weight:500;">🔧 ${act.technician} ${act.hours ? `• ⏱️ ${act.hours} ore` : ""}</div>
+        <div style="font-size:11px; color:var(--text); margin-top:2px;">🎤 Intervistatore: <strong>${act.interviewerName || "N/D"}</strong></div>
+        ${act.customerName ? `<div style="font-size:11px; color:var(--muted); margin-top:2.5px;">🏢 ${act.customerName}</div>` : ""}
+        ${currentUser === "IMA" && act.created_by ? `<div style="font-size:10px; color:#6b21a8; font-weight:bold; margin-top:2px;">👤 Creato da: ${act.created_by}</div>` : ""}
+      </div>
+      <div class="list-item-actions">
+        ${lockBadge}
+        ${editBtn}
+        ${delBtn}
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function showForm(id = null) {
+  activeEditingId = id;
+  document.getElementById("modalListView").style.display = "none";
+  document.getElementById("modalFormView").style.display = "block";
+  
+  const btnDelete = document.getElementById("btnDeleteForm");
+  const btnSave = document.getElementById("btnSaveActivity");
+  const creatorBox = document.getElementById("creatorInfo");
+  const readonlyWarning = document.getElementById("readonlyWarning");
+  
+  // Resetta stato UI
+  document.querySelectorAll("#activityForm input, #activityForm select").forEach(el => {
+    el.disabled = false;
+  });
+  btnSave.style.display = "inline-block";
+  readonlyWarning.style.display = "none";
+  
+  if (id) {
+    const act = allActivities.find(a => a.id === id);
+    
+    // Verifica finale dei permessi
+    const canEdit = canEditEvent(act);
+    const canDelete = canDeleteEvent(act);
+    
+    document.getElementById("formCustomer").value    = act.customerName || "";
+    document.getElementById("formLine").value        = act.lineCode || "";
+    document.getElementById("formMachine").value     = act.machineCode || "";
+    document.getElementById("formTechnician").value  = act.technician || "";
+    document.getElementById("formInterviewer").value = act.interviewerName || "";
+    document.getElementById("formCourse").value      = act.course || COURSES[0].id;
+    // Ricostruzione selezione ore: parte intera nel select, mezz'ora nel checkbox
+    const hoursNum = parseFloat(act.hours) || 0;
+    const baseHours = Math.floor(hoursNum);
+    const hasHalf   = (hoursNum - baseHours) >= 0.5;
+    document.getElementById("formHoursBase").value    = String(baseHours);
+    document.getElementById("formHoursHalf").checked  = hasHalf;
+    document.getElementById("formHours").value        = act.hours || "";
+    // Evidenzia il bottone corretto
+    document.querySelectorAll(".hrs-btn").forEach(b => {
+      b.classList.toggle("selected", b.dataset.val === String(baseHours));
+    });
+    // Aggiorna anteprima
+    const prevEl = document.getElementById("hoursPreview");
+    const prevVal = document.getElementById("hoursPreviewValue");
+    if (hoursNum > 0) {
+      const lbl = Number.isInteger(hoursNum) ? `${hoursNum} ${hoursNum===1?"ora":"ore"}` : `${hoursNum.toFixed(1).replace(".",",")} ore`;
+      prevVal.textContent = lbl; prevEl.style.display = "block";
+    } else {
+      prevEl.style.display = "none";
+    }
+    
+    if (act.created_by) {
+      creatorBox.textContent = `Record di proprietà di: ${act.created_by}`;
+      creatorBox.style.display = "block";
+    } else {
+      creatorBox.style.display = "none";
+    }
+    
+    if (!canEdit) {
+      document.querySelectorAll("#activityForm input, #activityForm select").forEach(el => {
+        el.disabled = true;
+      });
+      btnSave.style.display = "none";
+      readonlyWarning.style.display = "block";
+    }
+
+    btnDelete.style.display = canDelete ? "inline-block" : "none";
+  } else {
+    document.getElementById("activityForm").reset();
+    document.getElementById("formHoursBase").value   = "";
+    document.getElementById("formHoursHalf").checked = false;
+    document.getElementById("formHours").value       = "";
+    document.getElementById("hoursPreview").style.display = "none";
+    document.querySelectorAll(".hrs-btn").forEach(b => b.classList.remove("selected"));
+    creatorBox.style.display = "none";
+    btnDelete.style.display = "none";
+  }
+}
+
+// Chiamata standard dal calendario
+window._editAct = function(id) { showForm(id); };
+
+// Chiamata specifica dalla Dashboard Analitica
+window._editActFromDashboard = function(id) {
+  const act = allActivities.find(a => a.id === id);
+  if (!act) return;
+  
+  isDashboardEdit = true;
+  selectedDate = act.date;
+  const [y, m, d] = act.date.split("-");
+  
+  document.getElementById("modalTitle").textContent = `Modifica: ${parseInt(d)} ${MONTHS[parseInt(m)-1]} ${y}`;
+  document.getElementById("modalSub").textContent = "Dal Registro Attività (Analitica)";
+  
+  document.getElementById("overlay").classList.add("open");
+  showForm(id);
+};
+
+window._deleteAct = async function(id) {
+  if (!confirm("Eliminare definitivamente questa attività? L'operazione non può essere annullata.")) return;
+  setLoading(true);
+  try {
+    await window._fb.remove(id);
+    allActivities = allActivities.filter(a => a.id !== id);
+    showStatus("🗑️ Attività rimossa");
+    updateAutoSuggestDatalists();
+    
+    // Chiusura intelligente in base alla provenienza
+    if (document.getElementById("overlay").classList.contains("open")) {
+      if (isDashboardEdit) {
+        document.getElementById("overlay").classList.remove("open");
+        isDashboardEdit = false;
+      } else {
+        refreshActivityListUI();
+        document.getElementById("modalListView").style.display = "block";
+        document.getElementById("modalFormView").style.display = "none";
+      }
+    }
+    
+    renderAll();
+  } catch(e) {
+    showStatus("⚠️ Errore durante l'eliminazione");
+  }
+  setLoading(false);
+};
+
+// ── ESPORTAZIONE DATI IN FORMATO EXCEL ────────────────────────────────────────
+function runExcelExport(dataset, fileName) {
+  if (dataset.length === 0) {
+    alert("Nessun dato disponibile da esportare.");
+    return;
+  }
+  
+  const dayNames = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Pianificazione');
+
+  worksheet.columns = [
+    { header: "Data Evento", key: "date" },
+    { header: "Giorno", key: "dayName" },
+    { header: "Nome Cliente", key: "customerName" },
+    { header: "Codice Linea", key: "lineCode" },
+    { header: "Codice Macchina", key: "machineCode" },
+    { header: "Nome e Cognome Tecnico", key: "technician" },
+    { header: "Nome e Cognome Intervistatore", key: "interviewerName" },
+    { header: "Nome Corso", key: "course" },
+    { header: "Numero Ore", key: "hours" },
+    { header: "Utente Creatore", key: "created_by" }
+  ];
+
+  dataset.sort((a,b) => a.date.localeCompare(b.date)).forEach(act => {
+    const dateObj = new Date(act.date);
+    const dayName = isNaN(dateObj.getTime()) ? "" : dayNames[dateObj.getDay()];
+    
+    worksheet.addRow({
+      date: act.date,
+      dayName: dayName,
+      customerName: act.customerName || "",
+      lineCode: act.lineCode || "",
+      machineCode: act.machineCode || "",
+      technician: act.technician || "",
+      interviewerName: act.interviewerName || "",
+      course: act.course || "",
+      hours: act.hours ? parseFloat(act.hours) : 0,
+      created_by: act.created_by || ""
+    });
+  });
+
+  const headerRow = worksheet.getRow(1);
+  headerRow.height = 28;
+
+  headerRow.eachCell((cell) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+    cell.font = { name: 'Segoe UI', color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
+    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    cell.border = { top: { style: 'thin', color: { argb: 'FF475569' } }, left: { style: 'thin', color: { argb: 'FF475569' } }, bottom: { style: 'medium', color: { argb: 'FF0F172A' } }, right: { style: 'thin', color: { argb: 'FF475569' } } };
+  });
+
+  worksheet.eachRow({ includeHeader: false }, (row, rowNumber) => {
+    row.height = 22;
+    const isEven = rowNumber % 2 === 0;
+
+    row.eachCell((cell, colNumber) => {
+      if (isEven) {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+      } else {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+      }
+
+      cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF1E293B' } };
+      cell.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+
+      const key = worksheet.columns[colNumber - 1].key;
+      if (['date', 'dayName', 'lineCode', 'machineCode', 'created_by'].includes(key)) {
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      } else if (key === 'hours') {
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        cell.numFmt = '#,##0.00'; 
+      } else {
+        cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+      }
+    });
+  });
+
+  worksheet.columns.forEach(column => {
+    let maxLength = column.header.length;
+    column.eachCell({ includeHeader: false }, cell => {
+      const val = cell.value ? String(cell.value) : "";
+      if (val.length > maxLength) maxLength = val.length;
+    });
+    column.width = maxLength + 5; 
+  });
+
+  workbook.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+    showStatus("📊 Report Excel (.xlsx) generato!");
+  }).catch(err => {
+    console.error("Errore esportazione:", err);
+    showStatus("⚠️ Errore durante la creazione del file Excel");
+  });
+}
+
+// ── TOOLTIP ATTIVITÀ ─────────────────────────────────────────
+function initTooltip() {
+  const ttEl   = document.getElementById("actTooltip");
+  const ttCard = ttEl.querySelector(".tt-card");
+  let hideTimer = null;
+
+  function hoursLabel(h) {
+    const n = parseFloat(h) || 0;
+    if (n === 0) return "0 ore";
+    return Number.isInteger(n) ? `${n} ${n===1?"ora":"ore"}` : `${n.toFixed(1).replace(".",",")} ore`;
+  }
+
+  window._ttShow = function(act, dotEl) {
+    clearTimeout(hideTimer);
+    const cfg = (window.COURSES_MAP || {})[act.course] || { color: "#64748b" };
+    const hours = hoursLabel(act.hours);
+
+    // Assegnazione Icona per Fornitore anche nel Tooltip
+    let iconShape = '●';
+    if (act.created_by === 'timage') iconShape = '▲';
+    else if (act.created_by === 'tweddle') iconShape = '■';
+
+    function row(icon, label, value) {
+      if (!value) return "";
+      return `<div class="tt-row">
+        <span class="tt-row-icon">${icon}</span>
+        <span class="tt-row-label">${label}</span>
+        <span class="tt-row-value" title="${value}">${value}</span>
+      </div>`;
+    }
+
+    const lineMachine = [act.lineCode, act.machineCode].filter(Boolean).join(" / ") || "—";
+
+    ttCard.innerHTML = `
+      <div class="tt-header">
+        <span class="tt-course-dot" style="color:${cfg.color}">${iconShape}</span>
+        <span class="tt-course-name">${act.course || "Attività"}</span>
+        <span class="tt-hours-badge">⏱ ${hours}</span>
+      </div>
+      <div class="tt-body">
+        ${row("🏭","Fornitore", act.created_by || null)}
+        ${row("🏢","Cliente",   act.customerName || null)}
+        ${row("⚡","Linea/Mac", lineMachine)}
+        ${row("👷","Tecnico",   act.technician || null)}
+        ${row("🎤","Intervistatore", act.interviewerName || null)}
+        ${act.notes ? '<div class="tt-divider"></div>' + row("📝","Note", act.notes) : ""}
+      </div>
+    `;
+
+    const rect = dotEl.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Misura dimensioni reali prima di posizionare
+    ttEl.style.visibility = "hidden";
+    ttEl.style.top  = "0px";
+    ttEl.style.left = "0px";
+    ttEl.classList.add("visible");
+    const tw = ttEl.offsetWidth;
+    const th = ttEl.offsetHeight;
+    ttEl.style.visibility = "";
+
+    let top  = rect.bottom + window.scrollY + 8;
+    let left = rect.left   + window.scrollX + rect.width / 2 - tw / 2;
+
+    // Se esce sotto, vai sopra
+    if (rect.bottom + 8 + th > vh) top = rect.top + window.scrollY - th - 8;
+    // Clamp orizzontale
+    if (left < 8) left = 8;
+    if (left + tw > vw - 8) left = vw - tw - 8;
+
+    ttEl.style.top  = top  + "px";
+    ttEl.style.left = left + "px";
+  };
+
+  window._ttHide = function() {
+    hideTimer = setTimeout(() => ttEl.classList.remove("visible"), 100);
+  };
+}
+
+// ── BIND EVENTI E BOTTONI PRINCIPALI ──────────────────────────────────────────
+function bindEvents() {
+  document.getElementById("btnViewCalendar").addEventListener("click", () => {
+    currentActiveView = "calendar";
+    document.getElementById("btnViewCalendar").classList.add("active");
+    document.getElementById("btnViewDashboard").classList.remove("active");
+    
+    document.getElementById("viewMainCalendar").style.display = "block";
+    document.getElementById("viewMainDashboard").style.display = "none";
+    document.getElementById("yearNavContainer").style.visibility = "visible";
+    renderAll();
+  });
+
+  document.getElementById("btnViewDashboard").addEventListener("click", () => {
+    currentActiveView = "dashboard";
+    document.getElementById("btnViewCalendar").classList.remove("active");
+    document.getElementById("btnViewDashboard").classList.add("active");
+    
+    document.getElementById("viewMainCalendar").style.display = "none";
+    document.getElementById("viewMainDashboard").style.display = "block";
+    document.getElementById("yearNavContainer").style.visibility = "hidden";
+    renderAll();
+  });
+
+  // Login Submit
+  document.getElementById("loginForm").addEventListener("submit", () => {
+    const userVal = document.getElementById("loginUsername").value;
+    const passVal = document.getElementById("loginPassword").value.trim();
+    const errBox  = document.getElementById("loginError");
+    
+    errBox.style.display = "none";
+    
+    if (!passVal) {
+      errBox.textContent = "Compila il campo password.";
+      errBox.style.display = "block";
+      return;
+    }
+    
+    const encodedPass = btoa(passVal);
+    
+    // Bypass Amministratore (IMA)
+    if (encodedPass === USERS_DB["IMA"].encoded) {
+      loginSuccess("IMA");
+      return;
+    }
+
+    // Controllo utente standard
+    const dbRecord = USERS_DB[userVal];
+    if (dbRecord && encodedPass === dbRecord.encoded) {
+      loginSuccess(userVal);
+    } else {
+      errBox.textContent = "Password errata. Accesso negato.";
+      errBox.style.display = "block";
+    }
+  });
+
+  // Logout
+  document.getElementById("btnLogout").addEventListener("click", () => {
+    sessionStorage.removeItem("logged_user");
+    currentUser = null;
+    allActivities = [];
+    window._resetTableHeaderFilters();
+    document.getElementById("loginPassword").value = "";
+    document.getElementById("loginPage").style.display = "flex";
+    document.getElementById("appContainer").style.display = "none";
+  });
+
+  document.getElementById("prevYear").addEventListener("click", () => { year--; renderAll(); });
+  document.getElementById("nextYear").addEventListener("click", () => { year++; renderAll(); });
+  
+  ["filterClient", "filterLine", "filterMachine", "filterTechnician", "filterCourse", "filterHours", "filterProvider"].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) {
+      el.addEventListener("input", renderAll);
+      el.addEventListener("change", renderAll);
+    }
+  });
+  
+  document.getElementById("btnClearFilters").addEventListener("click", () => {
+    ["filterClient", "filterLine", "filterMachine", "filterTechnician", "filterHours"].forEach(id => {
+      document.getElementById(id).value = "";
+    });
+    document.getElementById("filterCourse").value = "";
+    const providerEl = document.getElementById("filterProvider");
+    if (providerEl) providerEl.value = "";
+    
+    // Ripristina anche i filtri di intestazione colonna e lo stato drill-down
+    window._resetTableHeaderFilters();
+    dbSelectedCustomer = null;
+    dbSelectedLineOrMachineName = null;
+    dbSelectedOperationalName = null;
+    renderAll();
+  });
+
+  // Reset dei filtri intestazione colonna (Excel-style) direttamente nel Registro Contestualizzato
+  document.getElementById("btnClearTableFilters").addEventListener("click", () => {
+    window._resetTableHeaderFilters();
+    // Ripristina anche lo stato drill-down per allineamento completo
+    dbSelectedCustomer = null;
+    dbSelectedLineOrMachineName = null;
+    dbSelectedOperationalName = null;
+    renderAll();
+    showStatus("🧹 Filtri di tabella azzerati");
+  });
+  
+  document.getElementById("btnCloseModal").addEventListener("click", () => {
+    document.getElementById("overlay").classList.remove("open");
+  });
+  
+  document.getElementById("btnOpenAddForm").addEventListener("click", () => showForm(null));
+  
+  // Chiusura/Annullamento Form
+  document.getElementById("btnCancelForm").addEventListener("click", () => {
+    if (isDashboardEdit) {
+      document.getElementById("overlay").classList.remove("open");
+      isDashboardEdit = false;
+      document.getElementById("modalSub").textContent = "Gestione e pianificazione interventi tecnici";
+    } else {
+      document.getElementById("modalListView").style.display = "block";
+      document.getElementById("modalFormView").style.display = "none";
+    }
+  });
+  
+  // Salvataggio Form
+  document.getElementById("btnSaveActivity").addEventListener("click", async () => {
+    const lineCode = document.getElementById("formLine").value.trim();
+    const technician = document.getElementById("formTechnician").value.trim();
+    const interviewerName = document.getElementById("formInterviewer").value.trim();
+    const hoursVal = document.getElementById("formHours").value.trim();
+    
+    if (!lineCode || !technician || !interviewerName || hoursVal === "") {
+      alert("I campi Codice Linea, Tecnico, Intervistatore e Ore Supporto sono obbligatori.");
+      return;
+    }
+    
+    const payload = {
+      date: selectedDate,
+      customerName: document.getElementById("formCustomer").value.trim(),
+      lineCode: lineCode,
+      machineCode: document.getElementById("formMachine").value.trim(),
+      technician: technician,
+      interviewerName: interviewerName,
+      course: document.getElementById("formCourse").value,
+      hours: parseFloat(hoursVal)
+    };
+    
+    if (activeEditingId) {
+      const original = allActivities.find(a => a.id === activeEditingId);
+      payload.created_by = original ? (original.created_by || currentUser) : currentUser;
+      payload.created_at = original ? (original.created_at || new Date().toISOString()) : new Date().toISOString();
+    } else {
+      payload.created_by = currentUser;
+      payload.created_at = new Date().toISOString();
+    }
+    
+    setLoading(true);
+    try {
+      const savedId = await window._fb.save(activeEditingId, payload);
+      if (activeEditingId) {
+        allActivities = allActivities.map(a => a.id === activeEditingId ? { id: activeEditingId, ...payload } : a);
+        showStatus("✓ Intervento Aggiornato");
+      } else {
+        allActivities.push({ id: savedId, ...payload });
+        showStatus("✓ Intervento Salvato");
+      }
+      
+      updateAutoSuggestDatalists();
+      
+      // Chiusura intelligente in base alla provenienza
+      if (isDashboardEdit) {
+        document.getElementById("overlay").classList.remove("open");
+        isDashboardEdit = false;
+        document.getElementById("modalSub").textContent = "Gestione e pianificazione interventi tecnici";
+      } else {
+        document.getElementById("modalListView").style.display = "block";
+        document.getElementById("modalFormView").style.display = "none";
+        refreshActivityListUI();
+      }
+      
+      renderAll();
+    } catch(e) {
+      showStatus("⚠️ Errore di salvataggio");
+    }
+    setLoading(false);
+  });
+  
+  // ── SELEZIONE ORE SUPPORTO: bottoni 1–8 + mezz'ora ──
+  function syncHoursField() {
+    const base = document.getElementById("formHoursBase").value;
+    const half = document.getElementById("formHoursHalf").checked;
+    const preview = document.getElementById("hoursPreview");
+    const previewVal = document.getElementById("hoursPreviewValue");
+    const hidden = document.getElementById("formHours");
+
+    if (base === "") {
+      hidden.value = "";
+      preview.style.display = "none";
+      return;
+    }
+    const total = parseFloat(base) + (half ? 0.5 : 0);
+    hidden.value = total;
+
+    const label = Number.isInteger(total)
+      ? `${total} ${total === 1 ? "ora" : "ore"}`
+      : `${total.toFixed(1).replace(".", ",")} ore`;
+    previewVal.textContent = label;
+    preview.style.display = "block";
+  }
+
+  document.querySelectorAll(".hrs-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".hrs-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      document.getElementById("formHoursBase").value = btn.dataset.val;
+      syncHoursField();
+    });
+  });
+  document.getElementById("formHoursHalf").addEventListener("change", syncHoursField);
+
+  document.getElementById("btnExportFiltered").addEventListener("click", () => {
+    runExcelExport(getFilteredActivities(), `attivita_filtrate_${currentUser}_${year}.xlsx`);
+  });
+  document.getElementById("btnExportAll").addEventListener("click", () => {
+    runExcelExport(allActivities, `registro_completo_${currentUser}_${year}.xlsx`);
+  });
+}
+</script>
+</body>
+</html>
