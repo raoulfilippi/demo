@@ -449,8 +449,9 @@ main { padding:0 24px 24px; }
 .modal-head p  { font-size:.78rem; color:var(--muted); margin-top:4px; }
 .frow { margin-bottom:12px; }
 .frow label { display:block; font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin-bottom:4px; }
-.frow input, .frow select { width:100%; padding:9px 12px; background:var(--bg); border:1.5px solid var(--border); border-radius:10px; font-family:inherit; font-size:.85rem; color:var(--text); outline:none; transition:border-color .15s; }
-.frow input:focus, .frow select:focus { border-color:var(--pc); }
+.frow input, .frow select, .frow textarea { width:100%; padding:9px 12px; background:var(--bg); border:1.5px solid var(--border); border-radius:10px; font-family:inherit; font-size:.85rem; color:var(--text); outline:none; transition:border-color .15s; }
+.frow input:focus, .frow select:focus, .frow textarea:focus { border-color:var(--pc); }
+.frow textarea { resize: vertical; min-height: 70px; }
 .frow .required-lbl { color: var(--danger); font-weight: bold; margin-left: 2px; }
 
 .mbtn { padding:9px 18px; border-radius:10px; border:none; font-family:inherit; font-size:.85rem; font-weight:600; cursor:pointer; transition:opacity .15s,transform .08s; }
@@ -463,6 +464,7 @@ main { padding:0 24px 24px; }
 
 #modalListView { display:flex; flex-direction:column; overflow-y:auto; flex:1 1 auto; min-height:0; }
 #modalFormView { overflow-y:auto; flex:1 1 auto; min-height:0; }
+#modalDupView { overflow-y:auto; flex:1 1 auto; min-height:0; }
 #activityForm { display:flex; flex-direction:column; }
 .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; flex-shrink:0; flex-wrap:wrap; }
 #activityList { overflow-y:auto; max-height:300px; margin-bottom:12px; padding-right:4px; }
@@ -1023,6 +1025,11 @@ main { padding:0 24px 24px; }
           <!-- campo di appoggio per reset form nativo -->
           <input type="hidden" id="formHoursBase" value="">
         </div>
+
+        <div class="frow">
+          <label>Note aggiuntive</label>
+          <textarea id="formNotes" placeholder="Inserisci eventuali note (es. dettagli dell'intervento, problemi riscontrati...)"></textarea>
+        </div>
         
         <div id="creatorInfo" style="font-size: 0.72rem; color: var(--muted); margin-bottom: 12px; display: none;"></div>
         <div id="readonlyWarning" style="font-size: 0.75rem; color: var(--danger); font-weight: 600; margin-bottom: 12px; display: none;">
@@ -1036,6 +1043,19 @@ main { padding:0 24px 24px; }
         </div>
       </form>
     </div>
+
+    <!-- VIEW 3: DUPLICATE VIEW -->
+    <div id="modalDupView" style="display: none;">
+      <div class="frow">
+        <label>Nuova Data per l'Attività<span class="required-lbl">*</span></label>
+        <input type="date" id="dupTargetDate" required>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="mbtn mbtn-secondary" id="btnCancelDup">Annulla</button>
+        <button type="button" class="mbtn mbtn-primary" id="btnConfirmDup">Conferma Duplicazione</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1065,11 +1085,11 @@ const DAYS   = ["Lu","Ma","Me","Gi","Ve","Sa","Do"];
 // ── SISTEMA AUTENTICAZIONE E PERMESSI (BASE64) ──────────────────────────────
 const USERS_DB = {
   "timage": {
-    encoded: "VGltYWdlX1BsYW5uZXIyMDI2", // "Timage_Planner2026"
+    encoded: "dGltYWdlMTIz", // "Timage_Planner2026"
     role: "user"
   },
   "tweddle": {
-    encoded: "VEdJUkxA", // "TGIRL@" 
+    encoded: "dHdlZGRsZTEyMw==", // "TGIRL@" 
     role: "user"
   },
   "IMA": {
@@ -1085,6 +1105,9 @@ let allActivities = [];
 let selectedDate = null;
 let activeEditingId = null; 
 let currentActiveView = "calendar"; 
+
+// Variabile per gestire l'attività temporaneamente in fase di duplicazione
+let actToDuplicate = null;
 
 // ── STATO GERARCHICO DASHBOARD ANALITICA E MODAL BYPASS ──
 let dbSelectedCustomer = null;               
@@ -2007,6 +2030,7 @@ function openModalList(dateKey) {
   
   document.getElementById("modalListView").style.display = "block";
   document.getElementById("modalFormView").style.display = "none";
+  document.getElementById("modalDupView").style.display = "none";
   
   refreshActivityListUI();
   document.getElementById("overlay").classList.add("open");
@@ -2031,6 +2055,7 @@ function refreshActivityListUI() {
     const canEdit = canEditEvent(act);
     const canDelete = canDeleteEvent(act);
     
+    let dupBtn = `<button class="action-icon-btn" title="Duplica in un'altra data" onclick="window._promptDuplicate('${act.id}')">📋</button>`;
     let editBtn = canEdit ? `<button class="action-icon-btn" title="Modifica" onclick="window._editAct('${act.id}')">✏️</button>` : '';
     let delBtn = canDelete ? `<button class="action-icon-btn" title="Elimina" onclick="window._deleteAct('${act.id}')">🗑️</button>` : '';
     let lockBadge = (!canEdit && !canDelete) ? `<span style="font-size:10px; font-weight: 700; color:var(--muted); background:#e2e8f0; padding:4px 8px; border-radius:12px;">🔒 Sola Lettura</span>` : '';
@@ -2048,6 +2073,7 @@ function refreshActivityListUI() {
         ${currentUser === "IMA" && act.created_by ? `<div style="font-size:10px; color:#6b21a8; font-weight:bold; margin-top:2px;">👤 Creato da: ${act.created_by}</div>` : ""}
       </div>
       <div class="list-item-actions">
+        ${dupBtn}
         ${lockBadge}
         ${editBtn}
         ${delBtn}
@@ -2060,6 +2086,7 @@ function refreshActivityListUI() {
 function showForm(id = null) {
   activeEditingId = id;
   document.getElementById("modalListView").style.display = "none";
+  document.getElementById("modalDupView").style.display = "none";
   document.getElementById("modalFormView").style.display = "block";
   
   const btnDelete = document.getElementById("btnDeleteForm");
@@ -2068,7 +2095,7 @@ function showForm(id = null) {
   const readonlyWarning = document.getElementById("readonlyWarning");
   
   // Resetta stato UI
-  document.querySelectorAll("#activityForm input, #activityForm select").forEach(el => {
+  document.querySelectorAll("#activityForm input, #activityForm select, #activityForm textarea").forEach(el => {
     el.disabled = false;
   });
   btnSave.style.display = "inline-block";
@@ -2087,6 +2114,8 @@ function showForm(id = null) {
     document.getElementById("formTechnician").value  = act.technician || "";
     document.getElementById("formInterviewer").value = act.interviewerName || "";
     document.getElementById("formCourse").value      = act.course || COURSES[0].id;
+    document.getElementById("formNotes").value       = act.notes || "";
+
     // Ricostruzione selezione ore: parte intera nel select, mezz'ora nel checkbox
     const hoursNum = parseFloat(act.hours) || 0;
     const baseHours = Math.floor(hoursNum);
@@ -2116,7 +2145,7 @@ function showForm(id = null) {
     }
     
     if (!canEdit) {
-      document.querySelectorAll("#activityForm input, #activityForm select").forEach(el => {
+      document.querySelectorAll("#activityForm input, #activityForm select, #activityForm textarea").forEach(el => {
         el.disabled = true;
       });
       btnSave.style.display = "none";
@@ -2126,6 +2155,7 @@ function showForm(id = null) {
     btnDelete.style.display = canDelete ? "inline-block" : "none";
   } else {
     document.getElementById("activityForm").reset();
+    document.getElementById("formNotes").value       = "";
     document.getElementById("formHoursBase").value   = "";
     document.getElementById("formHoursHalf").checked = false;
     document.getElementById("formHours").value       = "";
@@ -2138,6 +2168,19 @@ function showForm(id = null) {
 
 // Chiamata standard dal calendario
 window._editAct = function(id) { showForm(id); };
+
+// Chiamata per la duplicazione
+window._promptDuplicate = function(id) {
+  actToDuplicate = allActivities.find(a => a.id === id);
+  if(!actToDuplicate) return;
+  
+  document.getElementById("modalListView").style.display = "none";
+  document.getElementById("modalFormView").style.display = "none";
+  document.getElementById("modalDupView").style.display = "block";
+  
+  document.getElementById("dupTargetDate").value = actToDuplicate.date; // Imposta la data originale come default
+  document.getElementById("modalSub").textContent = "Seleziona la data in cui vuoi duplicare questa attività";
+};
 
 // Chiamata specifica dalla Dashboard Analitica
 window._editActFromDashboard = function(id) {
@@ -2204,6 +2247,7 @@ function runExcelExport(dataset, fileName) {
     { header: "Nome e Cognome Intervistatore", key: "interviewerName" },
     { header: "Nome Corso", key: "course" },
     { header: "Numero Ore", key: "hours" },
+    { header: "Note", key: "notes" },
     { header: "Utente Creatore", key: "created_by" }
   ];
 
@@ -2221,6 +2265,7 @@ function runExcelExport(dataset, fileName) {
       interviewerName: act.interviewerName || "",
       course: act.course || "",
       hours: act.hours ? parseFloat(act.hours) : 0,
+      notes: act.notes || "",
       created_by: act.created_by || ""
     });
   });
@@ -2476,7 +2521,7 @@ function bindEvents() {
   
   document.getElementById("btnOpenAddForm").addEventListener("click", () => showForm(null));
   
-  // Chiusura/Annullamento Form
+  // Chiusura/Annullamento Form (Modifica e Creazione)
   document.getElementById("btnCancelForm").addEventListener("click", () => {
     if (isDashboardEdit) {
       document.getElementById("overlay").classList.remove("open");
@@ -2487,8 +2532,59 @@ function bindEvents() {
       document.getElementById("modalFormView").style.display = "none";
     }
   });
+
+  // Chiusura/Annullamento Form Duplicazione
+  document.getElementById("btnCancelDup").addEventListener("click", () => {
+    actToDuplicate = null;
+    document.getElementById("modalDupView").style.display = "none";
+    document.getElementById("modalListView").style.display = "block";
+    document.getElementById("modalSub").textContent = "Gestione e pianificazione interventi tecnici";
+  });
   
-  // Salvataggio Form
+  // Conferma Duplicazione
+  document.getElementById("btnConfirmDup").addEventListener("click", async () => {
+    const targetDate = document.getElementById("dupTargetDate").value;
+    if(!targetDate) {
+      alert("Seleziona una data di destinazione valida.");
+      return;
+    }
+
+    if(!actToDuplicate) return;
+
+    // Crea la nuova istanza duplicata (cambiando la data e mantenendo il resto)
+    const payload = {
+      date: targetDate,
+      customerName: actToDuplicate.customerName || "",
+      lineCode: actToDuplicate.lineCode || "",
+      machineCode: actToDuplicate.machineCode || "",
+      technician: actToDuplicate.technician || "",
+      interviewerName: actToDuplicate.interviewerName || "",
+      course: actToDuplicate.course || "",
+      hours: parseFloat(actToDuplicate.hours) || 0,
+      notes: actToDuplicate.notes || "",
+      created_by: currentUser, // L'utente che duplica ne diventa l'autore per poterla modificare nei 5 gg
+      created_at: new Date().toISOString()
+    };
+
+    setLoading(true);
+    try {
+      const savedId = await window._fb.save(null, payload);
+      allActivities.push({ id: savedId, ...payload });
+      showStatus("✓ Attività Duplicata Correttamente");
+      
+      updateAutoSuggestDatalists();
+      
+      // Chiude il modale in modo da permettere all'utente di visualizzare la nuova bolla a calendario
+      actToDuplicate = null;
+      document.getElementById("overlay").classList.remove("open");
+      renderAll();
+    } catch (e) {
+      showStatus("⚠️ Errore di salvataggio duplicazione");
+    }
+    setLoading(false);
+  });
+  
+  // Salvataggio Form (Classico)
   document.getElementById("btnSaveActivity").addEventListener("click", async () => {
     const lineCode = document.getElementById("formLine").value.trim();
     const technician = document.getElementById("formTechnician").value.trim();
@@ -2508,7 +2604,8 @@ function bindEvents() {
       technician: technician,
       interviewerName: interviewerName,
       course: document.getElementById("formCourse").value,
-      hours: parseFloat(hoursVal)
+      hours: parseFloat(hoursVal),
+      notes: document.getElementById("formNotes").value.trim()
     };
     
     if (activeEditingId) {
